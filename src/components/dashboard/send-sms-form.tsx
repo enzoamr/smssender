@@ -24,12 +24,16 @@ import { computeSegments } from "@/lib/messaging/segments";
 const PRICE_PER_SEGMENT = 0.045;
 const initialState: SendActionState = { status: "idle", message: "" };
 
-export function SendSmsForm() {
+export function SendSmsForm({
+  defaultSender = DEFAULT_SENDER,
+}: {
+  defaultSender?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     sendSmsAction,
     initialState,
   );
-  const [from, setFrom] = useState(DEFAULT_SENDER);
+  const [from, setFrom] = useState(defaultSender);
   const [to, setTo] = useState("");
   const [text, setText] = useState("");
 
