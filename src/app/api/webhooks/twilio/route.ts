@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mapTwilioStatus } from "@/lib/messaging/provider";
 import { updateMessageByProviderId } from "@/lib/messaging/store";
+import { dispatchMessageStatus } from "@/lib/webhooks/service";
 
 /**
  * Webhook de statut Twilio (Status Callback).
@@ -45,10 +46,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  await updateMessageByProviderId(sid, {
+  const updated = await updateMessageByProviderId(sid, {
     status: mapTwilioStatus(status),
     errorCode,
   });
+
+  // Relais du changement de statut vers le webhook sortant du compte (best-effort).
+  if (updated) {
+    await dispatchMessageStatus(updated);
+  }
 
   // Twilio attend une réponse 2xx pour ne pas réessayer.
   return NextResponse.json({ ok: true });

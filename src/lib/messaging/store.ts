@@ -53,7 +53,7 @@ export async function updateMessage(
 export async function updateMessageByProviderId(
   providerId: string,
   patch: Partial<Message>,
-): Promise<void> {
+): Promise<Message | null> {
   const updatedAt = new Date().toISOString();
   if (useFirestore()) {
     const snap = await getAdminDb()
@@ -61,13 +61,15 @@ export async function updateMessageByProviderId(
       .where("providerId", "==", providerId)
       .limit(1)
       .get();
-    if (!snap.empty) {
-      await snap.docs[0].ref.set({ ...patch, updatedAt }, { merge: true });
-    }
-    return;
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    await doc.ref.set({ ...patch, updatedAt }, { merge: true });
+    return { ...(doc.data() as Message), ...patch, updatedAt };
   }
   const found = memoryStore.find((m) => m.providerId === providerId);
-  if (found) Object.assign(found, patch, { updatedAt });
+  if (!found) return null;
+  Object.assign(found, patch, { updatedAt });
+  return found;
 }
 
 export async function listMessages(
