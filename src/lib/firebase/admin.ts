@@ -14,6 +14,40 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
  */
 let cachedApp: App | null = null;
 
+/**
+ * Normalise la clé privée lue depuis une variable d'environnement.
+ *
+ * Les copier-coller dans Vercel introduisent souvent des erreurs de format qui
+ * font échouer le parsing PEM (`DECODER routines::unsupported`). On absorbe ici
+ * les cas les plus courants :
+ *   • guillemets englobants laissés par mégarde (`"...."` / `'....'`) ;
+ *   • clé encodée en Base64 (alternative robuste, sans \n ni guillemets) ;
+ *   • sauts de ligne échappés `\n` à reconvertir en vrais retours.
+ */
+function normalizePrivateKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  let key = raw.trim();
+
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  // Clé fournie en Base64 (ne contient pas l'en-tête PEM en clair) : on décode.
+  if (!key.includes("BEGIN")) {
+    try {
+      const decoded = Buffer.from(key, "base64").toString("utf8");
+      if (decoded.includes("BEGIN")) key = decoded;
+    } catch {
+      // On garde la valeur d'origine si le décodage échoue.
+    }
+  }
+
+  return key.replace(/\\n/g, "\n");
+}
+
 export function isAdminConfigured(): boolean {
   return Boolean(
     process.env.FIREBASE_PROJECT_ID &&
@@ -37,8 +71,7 @@ export function getAdminApp(): App {
     credential: cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // Les sauts de ligne de la clé privée sont échappés dans les variables d'env.
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      privateKey: normalizePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
     }),
   });
   return cachedApp;
