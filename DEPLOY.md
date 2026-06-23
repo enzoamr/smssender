@@ -59,7 +59,7 @@ Les rappels sont des **jobs planifiés** exécutés par l'endpoint
 - sur **Vercel** → variable `CRON_SECRET`
 - dans **Firebase** → `firebase functions:secrets:set CRON_SECRET`
 
-**b. Déclencheur via Firebase** (Scheduled Function, toutes les 5 min) :
+**b. Déclencheur via Firebase** (Scheduled Function, toutes les minutes) :
 1. Activer le plan **Blaze** (Firebase Console → Upgrade ; free tier généreux).
 2. Déployer la fonction :
    ```bash
@@ -70,7 +70,7 @@ Les rappels sont des **jobs planifiés** exécutés par l'endpoint
    Adaptez l'URL `APP_CRON_URL` si votre domaine change.
 
 > Alternative sans Firebase : un service comme **cron-job.org** qui appelle
-> `https://<domaine>/api/cron/run?key=<CRON_SECRET>` toutes les 5 minutes.
+> `https://<domaine>/api/cron/run?key=<CRON_SECRET>` toutes les minutes.
 
 ---
 

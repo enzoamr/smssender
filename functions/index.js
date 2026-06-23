@@ -23,7 +23,7 @@ const CRON_SECRET = defineSecret("CRON_SECRET");
 
 exports.runScheduledJobs = onSchedule(
   {
-    schedule: "every 5 minutes",
+    schedule: "every 1 minutes",
     region: "europe-west1",
     secrets: [CRON_SECRET],
     timeoutSeconds: 120,
