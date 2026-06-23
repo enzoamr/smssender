@@ -41,11 +41,3 @@ export interface JobRef {
   type: string;
   id: string;
 }
-
-/** Trace de la dernière exécution du cron (santé du planificateur). */
-export interface CronStatus {
-  lastRunAt: string;
-  processed: number;
-  done: number;
-  failed: number;
-}

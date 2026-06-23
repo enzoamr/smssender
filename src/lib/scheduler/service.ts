@@ -1,14 +1,6 @@
 import { randomUUID } from "crypto";
 import { sendMessage } from "@/lib/messaging/service";
-import {
-  countPendingJobs,
-  createJob,
-  getCronStatus,
-  listDueJobs,
-  listJobsByRef,
-  saveCronStatus,
-  updateJob,
-} from "./store";
+import { createJob, listDueJobs, listJobsByRef, updateJob } from "./store";
 import type {
   JobRef,
   MessageJobPayload,
@@ -113,22 +105,5 @@ export async function runDueJobs(): Promise<RunResult> {
     }
   }
 
-  const result = { processed: due.length, done, failed };
-  // Trace de santé : permet à l'app de montrer que le cron tourne.
-  await saveCronStatus({
-    lastRunAt: new Date().toISOString(),
-    ...result,
-  }).catch(() => {});
-  return result;
-}
-
-/** Santé du planificateur pour un compte (affichée dans l'app). */
-export async function getSchedulerHealth(
-  accountId: string,
-): Promise<{ lastRunAt: string | null; pendingCount: number }> {
-  const [status, pendingCount] = await Promise.all([
-    getCronStatus(),
-    countPendingJobs(accountId),
-  ]);
-  return { lastRunAt: status?.lastRunAt ?? null, pendingCount };
+  return { processed: due.length, done, failed };
 }
