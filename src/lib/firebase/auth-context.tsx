@@ -112,10 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await finalize(cred.user);
     },
     async signOutUser() {
-      if (configured) await signOut(getFirebaseAuth());
-      await fetch("/api/auth/session", { method: "DELETE" });
-      router.push("/login");
-      router.refresh();
+      try {
+        if (configured) await signOut(getFirebaseAuth());
+        await fetch("/api/auth/session", { method: "DELETE" });
+      } catch (err) {
+        console.error("[auth] signOut", err);
+      } finally {
+        // Navigation dure : garantit une déconnexion propre, sans état résiduel.
+        window.location.href = "/login";
+      }
     },
   };
 

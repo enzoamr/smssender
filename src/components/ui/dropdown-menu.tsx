@@ -53,15 +53,18 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
 }
 
+// Label générique de menu (en-tête de section). On rend un simple <div> : à la
+// différence de Menu.GroupLabel, il ne requiert pas d'être placé dans un
+// <Menu.Group>, ce qui évite l'erreur Base UI #31 quand il sert d'en-tête.
 function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: MenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<"div"> & {
   inset?: boolean
 }) {
   return (
-    <MenuPrimitive.GroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
