@@ -82,7 +82,7 @@ export async function launchCampaign(
   try {
     const messages = await sendMessage(
       { from, to: phones, text },
-      { accountId, source: "campaign" },
+      { accountId, source: "campaign", skipSuppression: true },
     );
     failedCount = messages.filter((m) => m.status === "FAILED").length;
     sentCount = messages.length - failedCount;

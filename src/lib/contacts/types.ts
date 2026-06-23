@@ -2,6 +2,9 @@
  * Modèle des contacts (répertoire de destinataires).
  */
 
+// Réexport pour compatibilité : la normalisation vit désormais dans lib/phone.
+export { normalizePhone } from "@/lib/phone";
+
 export type ContactStatus = "subscribed" | "unsubscribed";
 
 export interface Contact {
@@ -36,14 +39,4 @@ export function toContactView(c: Contact): ContactView {
     status: c.status,
     createdAt: c.createdAt,
   };
-}
-
-/**
- * Normalise et valide un numéro au format international E.164.
- * Renvoie `null` si le format est invalide (doit commencer par `+`).
- */
-export function normalizePhone(input: string): string | null {
-  const cleaned = input.replace(/[\s().\-]/g, "");
-  if (!/^\+\d{8,15}$/.test(cleaned)) return null;
-  return cleaned;
 }

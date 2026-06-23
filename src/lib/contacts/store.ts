@@ -47,6 +47,18 @@ export async function getContact(id: string): Promise<Contact | null> {
   return memoryStore.find((c) => c.id === id) ?? null;
 }
 
+/** Tous les contacts (tous comptes) ayant ce numéro — pour l'opt-out STOP entrant. */
+export async function findContactsByPhone(phone: string): Promise<Contact[]> {
+  if (useFirestore()) {
+    const snap = await getAdminDb()
+      .collection(COLLECTION)
+      .where("phone", "==", phone)
+      .get();
+    return snap.docs.map((d) => d.data() as Contact);
+  }
+  return memoryStore.filter((c) => c.phone === phone);
+}
+
 export async function listContacts(
   accountId: string,
   limit = 1000,

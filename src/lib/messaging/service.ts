@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
+import { listUnsubscribedPhones } from "@/lib/contacts/service";
+import { normalizePhone } from "@/lib/phone";
 import { computeSegments } from "./segments";
 import { getProvider } from "./provider";
 import {
@@ -49,6 +51,8 @@ export type SendMessageInput = z.input<typeof sendMessageSchema>;
 export interface SendContext {
   accountId: string;
   source: "dashboard" | "api" | "campaign";
+  /** La cible a déjà été filtrée des désinscrits (cas des campagnes). */
+  skipSuppression?: boolean;
 }
 
 /**
@@ -67,6 +71,36 @@ export async function sendMessage(
 
   const { from, to, text, scheduleAt } = parsed.data;
 
+  // Normalisation + validation E.164 de chaque destinataire (avant d'appeler
+  // le provider, pour rejeter les numéros mal formés en amont).
+  const normalized: string[] = [];
+  for (const raw of to) {
+    const phone = normalizePhone(raw);
+    if (!phone) {
+      throw new ApiError(
+        400,
+        "invalid_request",
+        `Numéro invalide : « ${raw} » (format international attendu, ex. +33612345678).`,
+      );
+    }
+    normalized.push(phone);
+  }
+
+  // Conformité opt-out (STOP) : on exclut les contacts désinscrits du compte,
+  // sauf quand la cible a déjà été filtrée (campagnes).
+  let recipients = Array.from(new Set(normalized));
+  if (!ctx.skipSuppression) {
+    const blocked = new Set(await listUnsubscribedPhones(ctx.accountId));
+    recipients = recipients.filter((r) => !blocked.has(r));
+    if (recipients.length === 0) {
+      throw new ApiError(
+        400,
+        "all_recipients_unsubscribed",
+        "Tous les destinataires sont désinscrits (STOP).",
+      );
+    }
+  }
+
   // TODO(billing): vérifier le solde de crédits du compte avant l'envoi
   //   et débiter atomiquement (transaction Firestore / Stripe usage record).
   //   En cas de solde insuffisant -> throw new ApiError(402, "insufficient_balance", ...).
@@ -76,7 +110,7 @@ export async function sendMessage(
   const now = new Date().toISOString();
 
   const results = await Promise.all(
-    to.map(async (recipient) => {
+    recipients.map(async (recipient) => {
       const message: Message = {
         id: `msg_${crypto.randomUUID()}`,
         accountId: ctx.accountId,

@@ -3,6 +3,7 @@ import {
   createContact,
   createContacts,
   deleteContact,
+  findContactsByPhone,
   getContact,
   listContacts,
   updateContact,
@@ -152,6 +153,16 @@ export async function listSubscribedPhones(
     .map((c) => c.phone);
 }
 
+/** Numéros désinscrits (STOP) du compte — à exclure de tout envoi. */
+export async function listUnsubscribedPhones(
+  accountId: string,
+): Promise<string[]> {
+  const contacts = await listContacts(accountId);
+  return contacts
+    .filter((c) => c.status === "unsubscribed")
+    .map((c) => c.phone);
+}
+
 /** Supprime un contact — uniquement s'il appartient au compte. */
 export async function removeContact(
   accountId: string,
@@ -173,4 +184,21 @@ export async function setContactStatus(
   if (!target || target.accountId !== accountId) return false;
   await updateContact(id, { status, updatedAt: new Date().toISOString() });
   return true;
+}
+
+/**
+ * Applique un opt-out/opt-in déclenché par SMS entrant (STOP/START) : met à jour
+ * tous les contacts (tous comptes) portant ce numéro. Renvoie le nombre touché.
+ */
+export async function setStatusByPhone(
+  phone: string,
+  status: ContactStatus,
+): Promise<number> {
+  const normalized = normalizePhone(phone) ?? phone.trim();
+  const contacts = await findContactsByPhone(normalized);
+  const now = new Date().toISOString();
+  await Promise.all(
+    contacts.map((c) => updateContact(c.id, { status, updatedAt: now })),
+  );
+  return contacts.length;
 }
