@@ -1,5 +1,5 @@
 import { getAdminDb, isAdminConfigured } from "@/lib/firebase/admin";
-import type { ScheduledJob } from "./types";
+import type { CronStatus, ScheduledJob } from "./types";
 
 /**
  * Persistance des jobs planifiés (collection `scheduled_jobs`).
@@ -65,6 +65,46 @@ export async function listDueJobs(limit = 100): Promise<ScheduledJob[]> {
     .filter((j) => j.status === "pending" && j.runAt <= nowIso)
     .sort((a, b) => a.runAt.localeCompare(b.runAt))
     .slice(0, limit);
+}
+
+/** Nombre de jobs encore en attente pour un compte (rappels programmés). */
+export async function countPendingJobs(accountId: string): Promise<number> {
+  if (useFirestore()) {
+    const snap = await getAdminDb()
+      .collection(COLLECTION)
+      .where("accountId", "==", accountId)
+      .get();
+    return snap.docs.filter((d) => (d.data() as ScheduledJob).status === "pending")
+      .length;
+  }
+  return memoryStore.filter(
+    (j) => j.accountId === accountId && j.status === "pending",
+  ).length;
+}
+
+// --- Santé du cron (doc global system/cron) --------------------------------
+
+const SYSTEM_COLLECTION = "system";
+const CRON_DOC = "cron";
+let memoryCronStatus: CronStatus | null = null;
+
+export async function saveCronStatus(status: CronStatus): Promise<void> {
+  if (useFirestore()) {
+    await getAdminDb().collection(SYSTEM_COLLECTION).doc(CRON_DOC).set(status);
+    return;
+  }
+  memoryCronStatus = status;
+}
+
+export async function getCronStatus(): Promise<CronStatus | null> {
+  if (useFirestore()) {
+    const doc = await getAdminDb()
+      .collection(SYSTEM_COLLECTION)
+      .doc(CRON_DOC)
+      .get();
+    return doc.exists ? (doc.data() as CronStatus) : null;
+  }
+  return memoryCronStatus;
 }
 
 /** Tous les jobs liés à une source donnée (ex. un rendez-vous). */
