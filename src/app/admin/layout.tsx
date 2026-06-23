@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { isAdmin } from "@/lib/admin/service";
 import { getCurrentUser } from "@/lib/auth/session";
 
 // Données propres à chaque utilisateur : jamais de cache statique partagé.
@@ -14,6 +15,8 @@ export default async function AdminLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Pilotage global : réservé aux super-admins.
+  if (!isAdmin(user.email, user.demo)) redirect("/dashboard");
 
   return (
     <SidebarProvider>

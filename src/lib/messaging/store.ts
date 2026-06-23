@@ -100,6 +100,18 @@ export async function listMessages(
   return memoryStore.filter((m) => m.accountId === accountId).slice(0, limit);
 }
 
+/**
+ * Tous les messages de la plateforme (tous comptes confondus).
+ * Réservé au pilotage admin — agrégation globale.
+ */
+export async function listAllMessages(limit = 5000): Promise<Message[]> {
+  if (useFirestore()) {
+    const snap = await getAdminDb().collection(COLLECTION).limit(limit).get();
+    return snap.docs.map((d) => d.data() as Message);
+  }
+  return memoryStore.slice(0, limit);
+}
+
 // --- Données de démonstration ---------------------------------------------
 
 function seedDemoMessages(): Message[] {
