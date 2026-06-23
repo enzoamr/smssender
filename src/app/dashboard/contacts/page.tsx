@@ -1,21 +1,22 @@
-import { Users } from "lucide-react";
+import { ContactsManager } from "@/components/dashboard/contacts-manager";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Placeholder } from "@/components/dashboard/placeholder";
+import { getCurrentUser } from "@/lib/auth/session";
+import { DEMO_ACCOUNT_ID } from "@/lib/config";
+import { listContactsForAccount } from "@/lib/contacts/service";
 
 export const metadata = { title: "Contacts" };
 
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
+  const contacts = await listContactsForAccount(accountId);
+
   return (
     <>
       <PageHeader
         title="Contacts"
-        description="Gérez vos répertoires, listes et segments de destinataires."
+        description="Gérez vos destinataires, listes et l'opt-out (STOP) pour rester conforme."
       />
-      <Placeholder
-        icon={Users}
-        title="Gestion des contacts"
-        description="Importez vos contacts (CSV), créez des listes et des segments, et gérez les opt-in / opt-out (STOP) pour rester conforme."
-      />
+      <ContactsManager initialContacts={contacts} />
     </>
   );
 }
