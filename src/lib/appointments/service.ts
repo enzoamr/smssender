@@ -20,6 +20,7 @@ const MAX_REMINDERS = 5;
 export interface CreateAppointmentInput {
   name: string;
   phone: string;
+  from: string;
   startAt: string;
   message: string;
   reminders: number[];
@@ -52,6 +53,11 @@ export async function addAppointment(
   if (Number.isNaN(startMs)) return { ok: false, error: "Date/heure invalide." };
   if (!message) return { ok: false, error: "Message de rappel requis." };
 
+  // Expéditeur : celui choisi, sinon l'expéditeur par défaut du compte.
+  const from =
+    input.from.trim().slice(0, 16) ||
+    (await getSettings(accountId)).defaultSender;
+
   const reminders = Array.from(new Set(input.reminders))
     .filter((m) => Number.isFinite(m) && m >= 0)
     .sort((a, b) => b - a)
@@ -63,6 +69,7 @@ export async function addAppointment(
     accountId,
     name: name.slice(0, 80),
     phone,
+    from,
     startAt: new Date(startMs).toISOString(),
     message: message.slice(0, 1530),
     reminders,
@@ -71,7 +78,6 @@ export async function addAppointment(
   await createAppointment(appointment);
 
   // Planifie chaque rappel encore dans le futur via la couche scheduler.
-  const { defaultSender } = await getSettings(accountId);
   await Promise.all(
     reminders.map((minutes) => {
       const runAt = startMs - minutes * 60_000;
@@ -79,7 +85,7 @@ export async function addAppointment(
       return scheduleMessage(
         accountId,
         new Date(runAt),
-        { from: defaultSender, to: phone, text: message },
+        { from, to: phone, text: message },
         { type: REF_TYPE, id: appointment.id },
       );
     }),

@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { deleteAppointmentAction } from "@/app/dashboard/calendar/actions";
 import {
   AppointmentForm,
-  REMINDER_OPTIONS,
+  formatReminder,
 } from "@/components/dashboard/appointment-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,17 +35,12 @@ import type { AppointmentView } from "@/lib/appointments/types";
 
 const WEEKDAYS = ["lun", "mar", "mer", "jeu", "ven", "sam", "dim"];
 
-function reminderLabel(minutes: number): string {
-  return (
-    REMINDER_OPTIONS.find((o) => o.value === minutes)?.label ??
-    `${minutes} min avant`
-  );
-}
-
 export function CalendarView({
   appointments,
+  defaultSender,
 }: {
   appointments: AppointmentView[];
+  defaultSender: string;
 }) {
   const [month, setMonth] = useState(() => new Date());
   const [selected, setSelected] = useState(() => new Date());
@@ -174,6 +169,7 @@ export function CalendarView({
           {showForm ? (
             <AppointmentForm
               defaultDate={selectedKey}
+              defaultSender={defaultSender}
               onCreated={() => setShowForm(false)}
             />
           ) : dayAppointments.length === 0 ? (
@@ -234,7 +230,7 @@ function AppointmentItem({ appointment }: { appointment: AppointmentView }) {
           <Bell className="size-3" />
           {appointment.reminders.map((m) => (
             <span key={m} className="rounded bg-muted px-1.5 py-0.5">
-              {reminderLabel(m)}
+              {formatReminder(m)} avant
             </span>
           ))}
         </div>

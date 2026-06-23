@@ -8,7 +8,9 @@ export interface Appointment {
   accountId: string;
   name: string;
   phone: string;
-  /** Date/heure du rendez-vous (ISO 8601). */
+  /** Expéditeur (sender ID ou numéro) utilisé pour les rappels. */
+  from: string;
+  /** Date/heure du rendez-vous (ISO 8601, UTC). */
   startAt: string;
   /** Message de rappel envoyé par SMS. */
   message: string;
@@ -21,6 +23,7 @@ export interface AppointmentView {
   id: string;
   name: string;
   phone: string;
+  from: string;
   startAt: string;
   message: string;
   reminders: number[];
@@ -31,6 +34,7 @@ export function toAppointmentView(a: Appointment): AppointmentView {
     id: a.id,
     name: a.name,
     phone: a.phone,
+    from: a.from,
     startAt: a.startAt,
     message: a.message,
     reminders: a.reminders,

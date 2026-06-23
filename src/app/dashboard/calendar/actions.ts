@@ -23,24 +23,24 @@ export async function createAppointmentAction(
 ): Promise<AppointmentActionState> {
   const name = String(formData.get("name") ?? "");
   const phone = String(formData.get("phone") ?? "");
-  const date = String(formData.get("date") ?? "");
-  const time = String(formData.get("time") ?? "");
+  const from = String(formData.get("from") ?? "");
+  // startAt est calculé côté client (fuseau de l'utilisateur) puis envoyé en ISO.
+  const startAt = String(formData.get("startAt") ?? "");
   const message = String(formData.get("message") ?? "");
   const reminders = formData
     .getAll("reminders")
     .map((v) => Number(v))
     .filter((n) => Number.isFinite(n));
 
-  if (!date || !time) {
+  if (!startAt || Number.isNaN(Date.parse(startAt))) {
     return { status: "error", message: "Date et heure requises." };
   }
-  // Combine date + heure locale en ISO.
-  const startAt = new Date(`${date}T${time}`).toISOString();
 
   const accountId = await currentAccountId();
   const result = await addAppointment(accountId, {
     name,
     phone,
+    from,
     startAt,
     message,
     reminders,
