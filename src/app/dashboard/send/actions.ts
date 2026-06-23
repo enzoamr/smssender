@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth/session";
 import { ApiError } from "@/lib/api/errors";
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
 import { sendMessage } from "@/lib/messaging/service";
@@ -29,9 +30,10 @@ export async function sendSmsAction(
     .filter(Boolean);
 
   try {
+    const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
     const messages = await sendMessage(
       { from, to: recipients, text },
-      { accountId: DEMO_ACCOUNT_ID, source: "dashboard" },
+      { accountId, source: "dashboard" },
     );
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/messages");

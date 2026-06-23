@@ -9,17 +9,37 @@ import { updateMessageByProviderId } from "@/lib/messaging/store";
  * (sent -> delivered/failed...). On retrouve le message par son `MessageSid`
  * (= providerId) et on met à jour son statut, qui se propage au dashboard.
  *
- * TODO(sécurité): valider la signature `X-Twilio-Signature` avec
- *   `twilio.validateRequest(authToken, signature, url, params)` avant de traiter.
+ * Sécurité : la requête est authentifiée via la signature `X-Twilio-Signature`
+ * (HMAC du corps + URL avec l'auth token). Sans token configuré (mode démo),
+ * la validation est ignorée.
  */
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const form = await request.formData();
-  const sid = form.get("MessageSid")?.toString();
-  const status = form.get("MessageStatus")?.toString();
-  const errorCode = form.get("ErrorCode")?.toString() ?? null;
+  const params: Record<string, string> = {};
+  for (const [key, value] of form.entries()) {
+    params[key] = value.toString();
+  }
+
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (authToken) {
+    const signature = request.headers.get("x-twilio-signature");
+    // URL exacte appelée par Twilio (doit correspondre à ce qui est configuré).
+    const url = process.env.TWILIO_STATUS_CALLBACK_URL ?? request.url;
+    const { default: twilio } = await import("twilio");
+    const valid =
+      signature != null &&
+      twilio.validateRequest(authToken, signature, url, params);
+    if (!valid) {
+      return NextResponse.json({ ok: false }, { status: 403 });
+    }
+  }
+
+  const sid = params.MessageSid;
+  const status = params.MessageStatus;
+  const errorCode = params.ErrorCode ?? null;
 
   if (!sid || !status) {
     return NextResponse.json({ ok: false }, { status: 400 });

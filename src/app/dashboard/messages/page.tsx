@@ -5,11 +5,13 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getCurrentUser } from "@/lib/auth/session";
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
 import { listMessages } from "@/lib/messaging/service";
 
 export default async function MessagesPage() {
-  const messages = await listMessages(DEMO_ACCOUNT_ID, 100);
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
+  const messages = await listMessages(accountId, 100);
   const delivered = messages.filter((m) => m.status === "DELIVERED");
   const failed = messages.filter(
     (m) => m.status === "FAILED" || m.status === "UNDELIVERED",

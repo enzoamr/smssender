@@ -18,13 +18,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth/session";
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
 import { getDashboardStats, listMessages } from "@/lib/messaging/service";
 
 export default async function DashboardPage() {
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
   const [stats, recent] = await Promise.all([
-    getDashboardStats(DEMO_ACCOUNT_ID),
-    listMessages(DEMO_ACCOUNT_ID, 6),
+    getDashboardStats(accountId),
+    listMessages(accountId, 6),
   ]);
 
   return (

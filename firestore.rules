@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// Sécurité Firestore.
+//
+// L'application n'accède JAMAIS à Firestore directement depuis le navigateur :
+// toute lecture/écriture passe par le serveur (Route Handlers / Server Actions)
+// via le SDK Admin, qui s'exécute avec des privilèges élevés et CONTOURNE ces
+// règles. Par conséquent, on refuse tout accès client direct : c'est la posture
+// la plus sûre tant qu'aucune fonctionnalité côté client n'en a besoin.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

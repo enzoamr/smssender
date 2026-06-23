@@ -1,22 +1,35 @@
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
+import { getAdminDb, isAdminConfigured } from "@/lib/firebase/admin";
 import { computeSegments } from "./segments";
 import type { Message, MessageStatus } from "./types";
 
 /**
  * Couche de persistance des messages.
  *
- * Tant que les identifiants Firebase Admin ne sont pas fournis, on retombe sur un
- * store en mémoire pré-rempli de données de démonstration : le tableau de bord
- * s'affiche et l'envoi fonctionne en local. Le branchement Firestore se fait
- * uniquement ici (les appelants — service, API — ne changent pas).
+ * Deux back-ends, choisis automatiquement :
+ *   • Firestore (collection `messages`) dès que FIREBASE_* est configuré — prod.
+ *   • Store en mémoire pré-rempli de données de démonstration sinon — pratique
+ *     pour développer l'UI sans comptes externes.
  *
- * TODO(firestore): remplacer le store mémoire par la collection `messages`
- *   via firebase-admin lorsque FIREBASE_* est configuré.
+ * Les appelants (service, API, webhooks) ne connaissent que ces 4 fonctions :
+ * tout le branchement vit ici.
  */
 
+const COLLECTION = "messages";
+
+// --- Store en mémoire (mode démo) -----------------------------------------
 const memoryStore: Message[] = seedDemoMessages();
 
+/** Vrai si l'on doit lire/écrire dans Firestore plutôt que dans le store mémoire. */
+function useFirestore(): boolean {
+  return isAdminConfigured();
+}
+
 export async function createMessage(message: Message): Promise<Message> {
+  if (useFirestore()) {
+    await getAdminDb().collection(COLLECTION).doc(message.id).set(message);
+    return message;
+  }
   memoryStore.unshift(message);
   return message;
 }
@@ -25,25 +38,64 @@ export async function updateMessage(
   id: string,
   patch: Partial<Message>,
 ): Promise<void> {
+  const updatedAt = new Date().toISOString();
+  if (useFirestore()) {
+    await getAdminDb()
+      .collection(COLLECTION)
+      .doc(id)
+      .set({ ...patch, updatedAt }, { merge: true });
+    return;
+  }
   const found = memoryStore.find((m) => m.id === id);
-  if (found) Object.assign(found, patch, { updatedAt: new Date().toISOString() });
+  if (found) Object.assign(found, patch, { updatedAt });
 }
 
 export async function updateMessageByProviderId(
   providerId: string,
   patch: Partial<Message>,
 ): Promise<void> {
+  const updatedAt = new Date().toISOString();
+  if (useFirestore()) {
+    const snap = await getAdminDb()
+      .collection(COLLECTION)
+      .where("providerId", "==", providerId)
+      .limit(1)
+      .get();
+    if (!snap.empty) {
+      await snap.docs[0].ref.set({ ...patch, updatedAt }, { merge: true });
+    }
+    return;
+  }
   const found = memoryStore.find((m) => m.providerId === providerId);
-  if (found) Object.assign(found, patch, { updatedAt: new Date().toISOString() });
+  if (found) Object.assign(found, patch, { updatedAt });
 }
 
 export async function listMessages(
   accountId: string,
   limit = 100,
 ): Promise<Message[]> {
-  return memoryStore
-    .filter((m) => m.accountId === accountId)
-    .slice(0, limit);
+  if (useFirestore()) {
+    const col = getAdminDb().collection(COLLECTION);
+    try {
+      // Chemin optimal : tri côté Firestore (nécessite un index composite
+      // accountId + createdAt, fourni dans firestore.indexes.json).
+      const snap = await col
+        .where("accountId", "==", accountId)
+        .orderBy("createdAt", "desc")
+        .limit(limit)
+        .get();
+      return snap.docs.map((d) => d.data() as Message);
+    } catch {
+      // L'index composite n'existe pas encore : on retombe sur un tri en mémoire
+      // pour que le tableau de bord fonctionne immédiatement, sans configuration.
+      const snap = await col.where("accountId", "==", accountId).get();
+      return snap.docs
+        .map((d) => d.data() as Message)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, limit);
+    }
+  }
+  return memoryStore.filter((m) => m.accountId === accountId).slice(0, limit);
 }
 
 // --- Données de démonstration ---------------------------------------------

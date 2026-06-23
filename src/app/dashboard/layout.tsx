@@ -4,6 +4,9 @@ import { Topbar } from "@/components/dashboard/topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getCurrentUser } from "@/lib/auth/session";
 
+// Données propres à chaque utilisateur : jamais de cache statique partagé.
+export const dynamic = "force-dynamic";
+
 // Solde de démonstration (à brancher sur le compte réel).
 const DEMO_CREDITS = 8450;
 

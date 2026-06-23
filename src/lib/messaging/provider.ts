@@ -35,25 +35,35 @@ class StubProvider implements SmsProvider {
   }
 }
 
+interface TwilioConfig {
+  accountSid: string;
+  authToken: string;
+  statusCallback?: string;
+  /** Messaging Service SID (pool d'expéditeurs). Prioritaire sur `from` si défini. */
+  messagingServiceSid?: string;
+}
+
 /** Provider Twilio (Programmable Messaging). */
 class TwilioProvider implements SmsProvider {
   readonly name = "twilio";
 
-  constructor(
-    private readonly accountSid: string,
-    private readonly authToken: string,
-    private readonly statusCallback?: string,
-  ) {}
+  constructor(private readonly config: TwilioConfig) {}
 
   async send(input: SendInput): Promise<SendResult> {
     // Import dynamique : le SDK n'est chargé que lorsque Twilio est réellement utilisé.
     const { default: twilio } = await import("twilio");
-    const client = twilio(this.accountSid, this.authToken);
+    const client = twilio(this.config.accountSid, this.config.authToken);
     const message = await client.messages.create({
-      from: input.from,
+      // Avec un Messaging Service, Twilio choisit l'expéditeur dans le pool ;
+      // sinon on utilise le sender ID / numéro fourni par l'appelant.
+      ...(this.config.messagingServiceSid
+        ? { messagingServiceSid: this.config.messagingServiceSid }
+        : { from: input.from }),
       to: input.to,
       body: input.text,
-      ...(this.statusCallback ? { statusCallback: this.statusCallback } : {}),
+      ...(this.config.statusCallback
+        ? { statusCallback: this.config.statusCallback }
+        : {}),
     });
     return {
       providerId: message.sid,
@@ -64,10 +74,15 @@ class TwilioProvider implements SmsProvider {
 
 /** Sélection du provider en fonction de l'environnement. */
 export function getProvider(): SmsProvider {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  if (sid && token) {
-    return new TwilioProvider(sid, token, process.env.TWILIO_STATUS_CALLBACK_URL);
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (accountSid && authToken) {
+    return new TwilioProvider({
+      accountSid,
+      authToken,
+      statusCallback: process.env.TWILIO_STATUS_CALLBACK_URL,
+      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+    });
   }
   return new StubProvider();
 }
