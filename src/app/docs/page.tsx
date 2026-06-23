@@ -242,6 +242,8 @@ print(res.json())`}</CodeBlock>
       "direction": "OUTBOUND",
       "country": "FR",
       "type": "text",
+      "error_code": null,
+      "error_message": null,
       "create_date": "2026-06-23T12:00:00.000Z",
       "update_date": "2026-06-23T12:00:00.000Z"
     }
@@ -293,6 +295,8 @@ print(res.json())`}</CodeBlock>
                     ["direction", "string", "OUTBOUND."],
                     ["country", "string | null", "Pays détecté (ISO-2)."],
                     ["type", "string", "text."],
+                    ["error_code", "string | null", "Code d'erreur normalisé si échec (ex. invalid_recipient)."],
+                    ["error_message", "string | null", "Motif d'échec lisible."],
                     ["create_date", "string", "Date de création (ISO 8601)."],
                     ["update_date", "string", "Dernière mise à jour (ISO 8601)."],
                   ].map(([f, t, d]) => (
@@ -335,6 +339,25 @@ print(res.json())`}</CodeBlock>
                 </tbody>
               </table>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Quand un message a le statut{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">FAILED</code>{" "}
+              ou{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                UNDELIVERED
+              </code>
+              , les champs{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                error_code
+              </code>{" "}
+              et{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                error_message
+              </code>{" "}
+              précisent la raison (ex. <code className="text-xs">invalid_recipient</code>,{" "}
+              <code className="text-xs">recipient_blocked</code>,{" "}
+              <code className="text-xs">unreachable</code>).
+            </p>
           </Section>
 
           <Section id="webhooks" title="Webhooks">
@@ -359,7 +382,8 @@ print(res.json())`}</CodeBlock>
     "channel": "SMS",
     "status": "DELIVERED",
     "type": "STATUS",
-    "to": "+33612345678"
+    "to": "+33612345678",
+    "error_code": null
   }
 }`}</CodeBlock>
             <h3 className="pt-2 text-sm font-semibold">Vérifier la signature</h3>

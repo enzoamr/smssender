@@ -145,6 +145,7 @@ export async function dispatchMessageStatus(message: Message): Promise<void> {
       status: message.status,
       type: "STATUS",
       to: message.to,
+      error_code: message.errorCode,
     },
   };
   const status = await deliver(ep, payload);
@@ -180,6 +181,7 @@ export async function sendTestEvent(accountId: string): Promise<TestResult> {
       status: "DELIVERED",
       type: "STATUS",
       to: "+33600000000",
+      error_code: null,
     },
   };
   const status = await deliver(ep, payload);

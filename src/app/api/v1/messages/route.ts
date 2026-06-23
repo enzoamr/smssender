@@ -69,8 +69,17 @@ export async function POST(request: Request) {
     principal = await authenticateApiKey(request);
     enforceRateLimit(principal);
 
-    const body = (await request.json().catch(() => ({}))) as SendBody;
-    const payload = body.data ?? (body as SendMessageInput);
+    let body: SendBody;
+    try {
+      body = (await request.json()) as SendBody;
+    } catch {
+      throw new ApiError(
+        400,
+        "invalid_request",
+        "Corps de requête JSON invalide ou manquant.",
+      );
+    }
+    const payload = body?.data ?? (body as SendMessageInput);
 
     const messages = await sendMessage(payload, {
       accountId: principal.accountId,
@@ -106,3 +115,19 @@ export async function GET(request: Request) {
     return response;
   }
 }
+
+/** Toute autre méthode (PUT, PATCH, DELETE…) est explicitement refusée. */
+function methodNotAllowed() {
+  return apiErrorResponse(
+    new ApiError(
+      405,
+      "method_not_allowed",
+      "Méthode non autorisée sur cet endpoint. Utilisez POST ou GET.",
+    ),
+  );
+}
+
+export const PUT = methodNotAllowed;
+export const PATCH = methodNotAllowed;
+export const DELETE = methodNotAllowed;
+export const OPTIONS = methodNotAllowed;

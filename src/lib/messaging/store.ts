@@ -154,7 +154,9 @@ function seedDemoMessages(): Message[] {
       type: "text",
       providerId: `stub_${crypto.randomUUID()}`,
       price: seg.segmentCount * 0.045,
-      errorCode: s.status === "FAILED" ? "30006" : null,
+      errorCode: s.status === "FAILED" ? "delivery_failed" : null,
+      errorMessage:
+        s.status === "FAILED" ? "Échec de remise par l'opérateur." : null,
       source: "dashboard",
       scheduleAt: null,
       createdAt: created,

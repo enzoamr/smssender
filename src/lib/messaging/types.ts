@@ -50,7 +50,10 @@ export interface Message {
   providerId: string | null;
   /** Coût estimé en crédits. */
   price: number | null;
+  /** Code d'erreur normalisé en cas d'échec (ex. invalid_recipient). */
   errorCode: string | null;
+  /** Message d'erreur lisible en cas d'échec. */
+  errorMessage: string | null;
   /** Source de l'envoi : tableau de bord, API publique ou campagne. */
   source: "dashboard" | "api" | "campaign";
   scheduleAt: string | null;
@@ -76,6 +79,10 @@ export interface ApiMessage {
   country: string | null;
   type: MessageType;
   schedule: string | null;
+  /** Code d'erreur normalisé (null si pas d'échec). */
+  error_code: string | null;
+  /** Message d'erreur lisible (null si pas d'échec). */
+  error_message: string | null;
   create_date: string;
   update_date: string;
 }
@@ -95,6 +102,8 @@ export function toApiMessage(m: Message): ApiMessage {
     country: m.country,
     type: m.type,
     schedule: m.scheduleAt,
+    error_code: m.errorCode,
+    error_message: m.errorMessage,
     create_date: m.createdAt,
     update_date: m.updatedAt,
   };

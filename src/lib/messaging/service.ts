@@ -3,7 +3,7 @@ import { ApiError } from "@/lib/api/errors";
 import { listUnsubscribedPhones } from "@/lib/contacts/service";
 import { normalizePhone } from "@/lib/phone";
 import { computeSegments } from "./segments";
-import { getProvider } from "./provider";
+import { getProvider, ProviderError } from "./provider";
 import {
   createMessage,
   listMessages as storeListMessages,
@@ -127,6 +127,7 @@ export async function sendMessage(
         providerId: null,
         price: seg.segmentCount * PRICE_PER_SEGMENT,
         errorCode: null,
+        errorMessage: null,
         source: ctx.source,
         scheduleAt: scheduleAt ?? null,
         createdAt: now,
@@ -146,11 +147,19 @@ export async function sendMessage(
           status: sent.status,
         });
       } catch (error) {
+        // Motif d'échec normalisé (code + message lisible), exposé au client.
+        const code = error instanceof ProviderError ? error.code : "delivery_failed";
+        const reason =
+          error instanceof ProviderError
+            ? error.message
+            : "Échec de remise par l'opérateur.";
         message.status = "FAILED";
-        message.errorCode = "provider_error";
+        message.errorCode = code;
+        message.errorMessage = reason;
         await updateMessage(message.id, {
           status: "FAILED",
-          errorCode: "provider_error",
+          errorCode: code,
+          errorMessage: reason,
         });
         console.error("[messaging] provider send failed", error);
       }

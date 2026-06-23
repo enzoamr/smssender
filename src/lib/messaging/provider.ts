@@ -23,6 +23,63 @@ export interface SmsProvider {
   send(input: SendInput): Promise<SendResult>;
 }
 
+/**
+ * Erreur d'envoi normalisée. Le code est le NÔTRE (jamais le code brut du
+ * provider) afin de garder la surcouche étanche tout en restant explicite.
+ */
+export class ProviderError extends Error {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ProviderError";
+  }
+}
+
+interface NormalizedError {
+  code: string;
+  message: string;
+}
+
+const GENERIC_FAILURE: NormalizedError = {
+  code: "delivery_failed",
+  message: "Échec de remise par l'opérateur.",
+};
+
+const TWILIO_ERROR_TABLE: Record<number, NormalizedError> = {
+  21211: { code: "invalid_recipient", message: "Numéro destinataire invalide." },
+  21214: { code: "invalid_recipient", message: "Numéro destinataire injoignable." },
+  21614: { code: "invalid_recipient", message: "Le numéro n'est pas un mobile valide." },
+  30005: { code: "invalid_recipient", message: "Numéro destinataire inconnu." },
+  21610: { code: "recipient_blocked", message: "Destinataire désinscrit (STOP)." },
+  30007: { code: "blocked_spam", message: "Message bloqué par le filtre anti-spam de l'opérateur." },
+  21408: { code: "region_not_enabled", message: "Envoi non autorisé vers cette région." },
+  30006: { code: "unreachable", message: "Numéro fixe ou opérateur injoignable." },
+  30003: { code: "unreachable", message: "Combiné destinataire injoignable." },
+  21606: { code: "invalid_sender", message: "Expéditeur invalide ou non autorisé." },
+  21660: { code: "invalid_sender", message: "Expéditeur non valide pour ce destinataire." },
+  20003: { code: "provider_auth", message: "Authentification opérateur refusée." },
+};
+
+/**
+ * Traduit un code d'erreur Twilio (numérique) en code normalisé + message
+ * lisible. Renvoie `null` si aucun code (= pas d'erreur).
+ */
+export function mapTwilioCode(
+  code: number | null | undefined,
+): NormalizedError | null {
+  if (code == null) return null;
+  return TWILIO_ERROR_TABLE[code] ?? GENERIC_FAILURE;
+}
+
+/** Traduit une exception du SDK Twilio en erreur d'envoi normalisée. */
+export function mapTwilioError(error: unknown): ProviderError {
+  const raw = (error as { code?: number })?.code;
+  const mapped = mapTwilioCode(typeof raw === "number" ? raw : null) ?? GENERIC_FAILURE;
+  return new ProviderError(mapped.code, mapped.message);
+}
+
 /** Provider de secours : simule un envoi quand aucune clé Twilio n'est configurée. */
 class StubProvider implements SmsProvider {
   readonly name = "stub";
@@ -67,22 +124,27 @@ class TwilioProvider implements SmsProvider {
             accountSid: this.config.accountSid,
           })
         : twilio(this.config.accountSid, this.config.authToken);
-    const message = await client.messages.create({
-      // Avec un Messaging Service, Twilio choisit l'expéditeur dans le pool ;
-      // sinon on utilise le sender ID / numéro fourni par l'appelant.
-      ...(this.config.messagingServiceSid
-        ? { messagingServiceSid: this.config.messagingServiceSid }
-        : { from: input.from }),
-      to: input.to,
-      body: input.text,
-      ...(this.config.statusCallback
-        ? { statusCallback: this.config.statusCallback }
-        : {}),
-    });
-    return {
-      providerId: message.sid,
-      status: mapTwilioStatus(message.status),
-    };
+    try {
+      const message = await client.messages.create({
+        // Avec un Messaging Service, Twilio choisit l'expéditeur dans le pool ;
+        // sinon on utilise le sender ID / numéro fourni par l'appelant.
+        ...(this.config.messagingServiceSid
+          ? { messagingServiceSid: this.config.messagingServiceSid }
+          : { from: input.from }),
+        to: input.to,
+        body: input.text,
+        ...(this.config.statusCallback
+          ? { statusCallback: this.config.statusCallback }
+          : {}),
+      });
+      return {
+        providerId: message.sid,
+        status: mapTwilioStatus(message.status),
+      };
+    } catch (error) {
+      // Erreur normalisée (le code Twilio brut n'est jamais exposé au client).
+      throw mapTwilioError(error);
+    }
   }
 }
 

@@ -45,5 +45,7 @@ export interface WebhookEventPayload {
     status: string;
     type: "STATUS";
     to: string;
+    /** Code d'erreur normalisé en cas d'échec (null sinon). */
+    error_code: string | null;
   };
 }

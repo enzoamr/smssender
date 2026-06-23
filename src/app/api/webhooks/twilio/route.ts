@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { mapTwilioStatus } from "@/lib/messaging/provider";
+import { mapTwilioCode, mapTwilioStatus } from "@/lib/messaging/provider";
 import { updateMessageByProviderId } from "@/lib/messaging/store";
 import { dispatchMessageStatus } from "@/lib/webhooks/service";
 
@@ -40,15 +40,19 @@ export async function POST(request: Request) {
 
   const sid = params.MessageSid;
   const status = params.MessageStatus;
-  const errorCode = params.ErrorCode ?? null;
 
   if (!sid || !status) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
+  // Normalise l'éventuel code d'erreur Twilio (livraison échouée en aval).
+  const twilioCode = params.ErrorCode ? Number(params.ErrorCode) : null;
+  const mappedError = mapTwilioCode(twilioCode);
+
   const updated = await updateMessageByProviderId(sid, {
     status: mapTwilioStatus(status),
-    errorCode,
+    errorCode: mappedError?.code ?? null,
+    errorMessage: mappedError?.message ?? null,
   });
 
   // Relais vers le webhook sortant du compte APRÈS la réponse à Twilio
