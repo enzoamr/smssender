@@ -54,8 +54,8 @@ export interface Message {
   errorCode: string | null;
   /** Message d'erreur lisible en cas d'échec. */
   errorMessage: string | null;
-  /** Source de l'envoi : tableau de bord, API publique ou campagne. */
-  source: "dashboard" | "api" | "campaign";
+  /** Source de l'envoi : tableau de bord, API publique, campagne ou planifié. */
+  source: "dashboard" | "api" | "campaign" | "scheduled";
   scheduleAt: string | null;
   createdAt: string;
   updatedAt: string;

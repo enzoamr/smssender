@@ -50,7 +50,7 @@ export type SendMessageInput = z.input<typeof sendMessageSchema>;
 
 export interface SendContext {
   accountId: string;
-  source: "dashboard" | "api" | "campaign";
+  source: "dashboard" | "api" | "campaign" | "scheduled";
   /** La cible a déjà été filtrée des désinscrits (cas des campagnes). */
   skipSuppression?: boolean;
 }
