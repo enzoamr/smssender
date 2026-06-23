@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { ApiKeysManager } from "@/components/dashboard/api-keys-manager";
 import { CodeBlock } from "@/components/dashboard/code-block";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -50,8 +52,15 @@ export default async function ApiKeysPage() {
             .
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <CodeBlock>{curlExample}</CodeBlock>
+          <Link
+            href="/docs"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Voir la documentation complète
+            <ArrowUpRight className="size-4" />
+          </Link>
         </CardContent>
       </Card>
     </>
