@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Building2,
+  CalendarDays,
   CreditCard,
   KeyRound,
   LayoutDashboard,
@@ -35,6 +36,7 @@ export const clientNav: NavGroup[] = [
       { title: "Messages", href: "/dashboard/messages", icon: MessageSquare },
       { title: "Contacts", href: "/dashboard/contacts", icon: Users },
       { title: "Campagnes", href: "/dashboard/campaigns", icon: Megaphone },
+      { title: "Calendrier", href: "/dashboard/calendar", icon: CalendarDays },
     ],
   },
   {
