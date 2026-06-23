@@ -1,15 +1,13 @@
 import {
+  SkeletonCards,
   SkeletonHeader,
-  SkeletonStatCards,
-  SkeletonTable,
 } from "@/components/dashboard/page-skeleton";
 
 export default function Loading() {
   return (
     <div className="space-y-6">
       <SkeletonHeader />
-      <SkeletonStatCards />
-      <SkeletonTable rows={6} columns={5} />
+      <SkeletonCards count={2} height="h-44" />
     </div>
   );
 }
