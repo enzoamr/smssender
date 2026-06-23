@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { listAllMessages } from "@/lib/messaging/store";
 import {
   TERMINAL_STATUSES,
@@ -5,6 +6,10 @@ import {
   type MessageStatus,
 } from "@/lib/messaging/types";
 import { getStoredSettings } from "@/lib/settings/store";
+
+// Les stats globales scannent l'ensemble des messages : on met le résultat en
+// cache 60 s pour ne pas tout recalculer à chaque chargement de page admin.
+const CACHE_TTL = 60;
 
 /**
  * Pilotage de la plateforme (super-admin).
@@ -40,7 +45,7 @@ export interface PlatformStats {
   accounts: AccountSummary[];
 }
 
-export async function getPlatformStats(): Promise<PlatformStats> {
+async function computePlatformStats(): Promise<PlatformStats> {
   const messages = await listAllMessages();
 
   const agg = new Map<
@@ -134,7 +139,7 @@ function toRow(m: Message): AdminMessageRow {
   };
 }
 
-export async function listRecentPlatformMessages(
+async function computeRecentPlatformMessages(
   limit = 100,
 ): Promise<AdminMessageRow[]> {
   const messages = await listAllMessages();
@@ -153,7 +158,7 @@ export interface ModerationData {
   recentFailures: AdminMessageRow[];
 }
 
-export async function getModerationData(): Promise<ModerationData> {
+async function computeModerationData(): Promise<ModerationData> {
   const messages = await listAllMessages();
 
   const agg = new Map<
@@ -200,3 +205,23 @@ export async function getModerationData(): Promise<ModerationData> {
 
   return { riskyAccounts, recentFailures };
 }
+
+// --- Exports mis en cache (revalidation toutes les 60 s) --------------------
+
+export const getPlatformStats = unstable_cache(
+  computePlatformStats,
+  ["admin:platform-stats"],
+  { revalidate: CACHE_TTL },
+);
+
+export const listRecentPlatformMessages = unstable_cache(
+  computeRecentPlatformMessages,
+  ["admin:recent-messages"],
+  { revalidate: CACHE_TTL },
+);
+
+export const getModerationData = unstable_cache(
+  computeModerationData,
+  ["admin:moderation"],
+  { revalidate: CACHE_TTL },
+);

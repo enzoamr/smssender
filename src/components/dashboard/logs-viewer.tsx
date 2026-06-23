@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { LogView } from "@/lib/logs/types";
+import { Pagination } from "./pagination";
+
+const PAGE_SIZE = 25;
 
 type Filter = "all" | "api" | "webhook";
 
@@ -46,10 +49,20 @@ function formatDate(iso: string): string {
 
 export function LogsViewer({ logs }: { logs: LogView[] }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const [page, setPage] = useState(0);
 
   const filtered = useMemo(
     () => (filter === "all" ? logs : logs.filter((l) => l.type === filter)),
     [logs, filter],
+  );
+
+  useEffect(() => setPage(0), [filter]);
+
+  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(0, pageCount - 1));
+  const visible = filtered.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE,
   );
 
   return (
@@ -95,7 +108,7 @@ export function LogsViewer({ logs }: { logs: LogView[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((l) => (
+              {visible.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell>
                     <Badge variant="secondary">
@@ -128,6 +141,7 @@ export function LogsViewer({ logs }: { logs: LogView[] }) {
             </TableBody>
           </Table>
         )}
+        <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
       </CardContent>
     </Card>
   );

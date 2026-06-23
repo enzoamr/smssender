@@ -45,8 +45,10 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type { ContactView } from "@/lib/contacts/types";
+import { Pagination } from "./pagination";
 
 const initialState: ContactActionState = { status: "idle", message: "" };
+const PAGE_SIZE = 25;
 
 export function ContactsManager({
   initialContacts,
@@ -88,6 +90,8 @@ export function ContactsManager({
     }
   }, [importState]);
 
+  const [page, setPage] = useState(0);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return initialContacts;
@@ -98,6 +102,15 @@ export function ContactsManager({
         (c.list?.toLowerCase().includes(q) ?? false),
     );
   }, [initialContacts, query]);
+
+  useEffect(() => setPage(0), [query]);
+
+  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(0, pageCount - 1));
+  const visible = filtered.slice(
+    safePage * PAGE_SIZE,
+    safePage * PAGE_SIZE + PAGE_SIZE,
+  );
 
   return (
     <div className="space-y-4">
@@ -234,12 +247,13 @@ export function ContactsManager({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((contact) => (
+                {visible.map((contact) => (
                   <ContactRow key={contact.id} contact={contact} />
                 ))}
               </TableBody>
             </Table>
           )}
+          <Pagination page={safePage} pageCount={pageCount} onPage={setPage} />
         </CardContent>
       </Card>
     </div>
