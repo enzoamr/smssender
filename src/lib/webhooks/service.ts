@@ -1,4 +1,5 @@
 import { createHmac, randomBytes } from "crypto";
+import { logWebhookDelivery } from "@/lib/logs/service";
 import type { Message } from "@/lib/messaging/types";
 import { getEndpoint, saveEndpoint } from "./store";
 import {
@@ -138,6 +139,11 @@ export async function dispatchMessageStatus(message: Message): Promise<void> {
     lastDeliveryAt: new Date().toISOString(),
     lastStatus: status,
   });
+  await logWebhookDelivery(message.accountId, {
+    target: ep.url,
+    status: status ?? 0,
+    detail: `STATUS · ${message.status}`,
+  }).catch(() => {});
 }
 
 export interface TestResult {
@@ -168,5 +174,10 @@ export async function sendTestEvent(accountId: string): Promise<TestResult> {
     lastDeliveryAt: new Date().toISOString(),
     lastStatus: status,
   });
+  await logWebhookDelivery(accountId, {
+    target: ep.url,
+    status: status ?? 0,
+    detail: "STATUS · test",
+  }).catch(() => {});
   return { ok: status !== null && status >= 200 && status < 300, status };
 }

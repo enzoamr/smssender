@@ -1,21 +1,22 @@
-import { ScrollText } from "lucide-react";
+import { LogsViewer } from "@/components/dashboard/logs-viewer";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Placeholder } from "@/components/dashboard/placeholder";
+import { getCurrentUser } from "@/lib/auth/session";
+import { DEMO_ACCOUNT_ID } from "@/lib/config";
+import { listLogsForAccount } from "@/lib/logs/service";
 
 export const metadata = { title: "Logs" };
 
-export default function LogsPage() {
+export default async function LogsPage() {
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
+  const logs = await listLogsForAccount(accountId);
+
   return (
     <>
       <PageHeader
         title="Logs"
-        description="Journal des requêtes API et des événements webhooks."
+        description="Journal des requêtes API et des livraisons de webhooks."
       />
-      <Placeholder
-        icon={ScrollText}
-        title="Journaux d'activité"
-        description="Inspectez chaque requête API (statut, latence, payload) et chaque webhook envoyé, avec relance manuelle en cas d'échec."
-      />
+      <LogsViewer logs={logs} />
     </>
   );
 }
