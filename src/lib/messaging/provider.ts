@@ -36,8 +36,14 @@ class StubProvider implements SmsProvider {
 }
 
 interface TwilioConfig {
+  /** Account SID, commence toujours par `AC`. */
   accountSid: string;
-  authToken: string;
+  /** Auth Token (mode d'auth simple). */
+  authToken?: string;
+  /** API Key SID, commence par `SK` (mode d'auth recommandé en prod). */
+  apiKeySid?: string;
+  /** Secret associé à l'API Key. */
+  apiKeySecret?: string;
   statusCallback?: string;
   /** Messaging Service SID (pool d'expéditeurs). Prioritaire sur `from` si défini. */
   messagingServiceSid?: string;
@@ -52,7 +58,15 @@ class TwilioProvider implements SmsProvider {
   async send(input: SendInput): Promise<SendResult> {
     // Import dynamique : le SDK n'est chargé que lorsque Twilio est réellement utilisé.
     const { default: twilio } = await import("twilio");
-    const client = twilio(this.config.accountSid, this.config.authToken);
+    // Deux modes d'authentification :
+    //  • API Key (SK...) + secret : l'Account SID (AC...) est passé en option.
+    //  • Auth Token : Account SID (AC...) + token.
+    const client =
+      this.config.apiKeySid && this.config.apiKeySecret
+        ? twilio(this.config.apiKeySid, this.config.apiKeySecret, {
+            accountSid: this.config.accountSid,
+          })
+        : twilio(this.config.accountSid, this.config.authToken);
     const message = await client.messages.create({
       // Avec un Messaging Service, Twilio choisit l'expéditeur dans le pool ;
       // sinon on utilise le sender ID / numéro fourni par l'appelant.
@@ -76,13 +90,20 @@ class TwilioProvider implements SmsProvider {
 export function getProvider(): SmsProvider {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const apiKeySid = process.env.TWILIO_API_KEY_SID;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  const common = {
+    statusCallback: process.env.TWILIO_STATUS_CALLBACK_URL,
+    messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
+  };
+
+  // Auth par API Key (recommandé) : Account SID + API Key SID + secret.
+  if (accountSid && apiKeySid && apiKeySecret) {
+    return new TwilioProvider({ accountSid, apiKeySid, apiKeySecret, ...common });
+  }
+  // Auth par Auth Token : Account SID + token.
   if (accountSid && authToken) {
-    return new TwilioProvider({
-      accountSid,
-      authToken,
-      statusCallback: process.env.TWILIO_STATUS_CALLBACK_URL,
-      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
-    });
+    return new TwilioProvider({ accountSid, authToken, ...common });
   }
   return new StubProvider();
 }

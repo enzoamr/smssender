@@ -37,13 +37,30 @@ export async function sendSmsAction(
     );
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/messages");
+
+    // Refléter le résultat réel : un message rejeté par l'opérateur a le statut
+    // FAILED, il ne faut donc pas le compter comme « envoyé ».
+    const failedCount = messages.filter((m) => m.status === "FAILED").length;
+    const sentCount = messages.length - failedCount;
+
+    if (sentCount === 0) {
+      return {
+        status: "error",
+        message:
+          "Échec de l'envoi côté opérateur. Vérifiez votre configuration Twilio (identifiants, expéditeur, numéro destinataire).",
+      };
+    }
+    if (failedCount > 0) {
+      return {
+        status: "success",
+        message: `${sentCount} message(s) envoyé(s), ${failedCount} en échec.`,
+        count: sentCount,
+      };
+    }
     return {
       status: "success",
-      message:
-        messages.length > 1
-          ? `${messages.length} messages envoyés.`
-          : "Message envoyé.",
-      count: messages.length,
+      message: sentCount > 1 ? `${sentCount} messages envoyés.` : "Message envoyé.",
+      count: sentCount,
     };
   } catch (error) {
     const message =
