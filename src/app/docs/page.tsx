@@ -210,6 +210,20 @@ export default function DocsPage() {
 });
 const { data } = await res.json();`}</CodeBlock>
 
+            <h3 className="pt-2 text-sm font-semibold">Exemple — Python</h3>
+            <CodeBlock>{`import requests
+
+res = requests.post(
+    "${BASE_URL}/api/v1/messages",
+    headers={"X-Api-Key": "sk_live_votre_cle"},
+    json={"data": {
+        "from": "Sendly",
+        "to": ["+33612345678"],
+        "text": "Bonjour 👋",
+    }},
+)
+print(res.json())`}</CodeBlock>
+
             <h3 className="pt-2 text-sm font-semibold">
               Réponse <span className="font-mono text-xs">201 Created</span>
             </h3>
@@ -367,7 +381,7 @@ function verify(rawBody, signature, secret) {
 }`}</CodeBlock>
           </Section>
 
-          <Section id="erreurs" title="Erreurs">
+          <Section id="erreurs" title="Erreurs et codes d'état">
             <p className="text-sm text-muted-foreground">
               En cas d&apos;erreur, l&apos;API renvoie un code HTTP approprié et
               un corps{" "}
@@ -376,6 +390,36 @@ function verify(rawBody, signature, secret) {
               </code>
               .
             </p>
+
+            <h3 className="text-sm font-semibold">Codes d&apos;état HTTP</h3>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <tbody className="divide-y">
+                  {[
+                    ["200 / 201", "Succès — requête traitée (201 à la création d'un message)."],
+                    ["400", "Requête invalide : paramètre manquant ou mal formé."],
+                    ["401", "Non autorisé : clé API manquante, invalide ou révoquée."],
+                    ["402", "Paiement requis : solde insuffisant (à venir)."],
+                    ["403", "Accès refusé."],
+                    ["404", "Ressource introuvable."],
+                    ["429", "Trop de requêtes (limite de débit dépassée)."],
+                    ["500", "Erreur interne du serveur."],
+                    ["502 / 503", "Service momentanément indisponible."],
+                  ].map(([h, d]) => (
+                    <tr key={h}>
+                      <td className="px-4 py-2 align-top">
+                        <code className="font-mono text-xs">{h}</code>
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">{d}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="pt-2 text-sm font-semibold">
+              Codes d&apos;erreur de l&apos;API
+            </h3>
             <div className="overflow-x-auto rounded-lg border">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
