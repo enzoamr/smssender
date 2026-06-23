@@ -1,5 +1,9 @@
 import { listAllMessages } from "@/lib/messaging/store";
-import { TERMINAL_STATUSES } from "@/lib/messaging/types";
+import {
+  TERMINAL_STATUSES,
+  type Message,
+  type MessageStatus,
+} from "@/lib/messaging/types";
 import { getStoredSettings } from "@/lib/settings/store";
 
 /**
@@ -97,4 +101,102 @@ export async function getPlatformStats(): Promise<PlatformStats> {
         : Math.round((globalDelivered / globalFinalized) * 100),
     accounts,
   };
+}
+
+// --- Flux global des messages (/admin/messages, /admin/moderation) ---------
+
+export interface AdminMessageRow {
+  id: string;
+  account: string;
+  to: string;
+  from: string;
+  status: MessageStatus;
+  errorCode: string | null;
+  segmentCount: number;
+  createdAt: string;
+}
+
+/** Masque les 4 derniers chiffres du destinataire (confidentialité). */
+function maskPhone(phone: string): string {
+  return phone.length <= 4 ? phone : `${phone.slice(0, -4)}••••`;
+}
+
+function toRow(m: Message): AdminMessageRow {
+  return {
+    id: m.id,
+    account: m.accountId,
+    to: maskPhone(m.to),
+    from: m.from,
+    status: m.status,
+    errorCode: m.errorCode,
+    segmentCount: m.segmentCount,
+    createdAt: m.createdAt,
+  };
+}
+
+export async function listRecentPlatformMessages(
+  limit = 100,
+): Promise<AdminMessageRow[]> {
+  const messages = await listAllMessages();
+  return messages
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit)
+    .map(toRow);
+}
+
+// --- Modération ------------------------------------------------------------
+
+export interface ModerationData {
+  /** Comptes au taux de délivrabilité anormalement bas (signal de spam). */
+  riskyAccounts: AccountSummary[];
+  /** Messages récemment en échec, pour inspection. */
+  recentFailures: AdminMessageRow[];
+}
+
+export async function getModerationData(): Promise<ModerationData> {
+  const messages = await listAllMessages();
+
+  const agg = new Map<
+    string,
+    { total: number; delivered: number; failed: number; finalized: number }
+  >();
+  for (const m of messages) {
+    const a =
+      agg.get(m.accountId) ??
+      { total: 0, delivered: 0, failed: 0, finalized: 0 };
+    a.total += 1;
+    if (m.status === "DELIVERED") a.delivered += 1;
+    if (m.status === "FAILED" || m.status === "UNDELIVERED") a.failed += 1;
+    if (TERMINAL_STATUSES.includes(m.status)) a.finalized += 1;
+    agg.set(m.accountId, a);
+  }
+
+  const riskyAccounts: AccountSummary[] = await Promise.all(
+    Array.from(agg.entries())
+      .filter(([, a]) => a.finalized >= 5 && a.delivered / a.finalized < 0.8)
+      .sort(
+        (a, b) =>
+          a[1].delivered / a[1].finalized - b[1].delivered / b[1].finalized,
+      )
+      .slice(0, 20)
+      .map(async ([accountId, a]) => {
+        const settings = await getStoredSettings(accountId);
+        return {
+          accountId,
+          name: settings?.organizationName || accountId,
+          total: a.total,
+          delivered: a.delivered,
+          failed: a.failed,
+          deliveryRate: Math.round((a.delivered / a.finalized) * 100),
+        };
+      }),
+  );
+
+  const recentFailures = messages
+    .filter((m) => m.status === "FAILED" || m.status === "UNDELIVERED")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 50)
+    .map(toRow);
+
+  return { riskyAccounts, recentFailures };
 }
