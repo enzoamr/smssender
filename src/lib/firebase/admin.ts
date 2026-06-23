@@ -4,7 +4,6 @@ import {
   initializeApp,
   type App,
 } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 /**
@@ -43,10 +42,6 @@ export function getAdminApp(): App {
     }),
   });
   return cachedApp;
-}
-
-export function getAdminAuth(): Auth {
-  return getAuth(getAdminApp());
 }
 
 export function getAdminDb(): Firestore {

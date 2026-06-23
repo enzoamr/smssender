@@ -1,21 +1,37 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { getAdminAuth, isAdminConfigured } from "@/lib/firebase/admin";
+import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
+import { isAdminConfigured } from "@/lib/firebase/admin";
 
 /**
  * Gestion de la session serveur via un cookie httpOnly.
- *  POST   { idToken }  -> vérifie le jeton (Admin SDK) et pose le cookie de session
+ *  POST   { idToken }  -> vérifie le jeton Firebase (via JWKS, sans firebase-admin/auth)
+ *                         et pose un cookie de session JWT signé avec SESSION_SECRET
  *  DELETE              -> supprime le cookie (déconnexion)
  */
 
 export const runtime = "nodejs";
 
 const SESSION_COOKIE = "session";
-const EXPIRES_IN_MS = 60 * 60 * 24 * 5 * 1000; // 5 jours
+const EXPIRES_IN_SECS = 60 * 60 * 24 * 5; // 5 jours
+
+// JWKS pour vérifier les ID tokens Firebase (RSA-256)
+const FIREBASE_JWKS = createRemoteJWKSet(
+  new URL(
+    "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+  ),
+);
+
+function getSessionKey(): Uint8Array {
+  return Buffer.from(process.env.SESSION_SECRET!, "base64");
+}
 
 export async function POST(request: Request) {
-  // Mode démo : pas d'Admin configuré, on ne pose pas de cookie.
-  if (!isAdminConfigured()) {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const hasSecret = Boolean(process.env.SESSION_SECRET);
+
+  // Mode démo : Firebase ou SESSION_SECRET non configuré
+  if (!isAdminConfigured() || !hasSecret || !projectId) {
     return NextResponse.json({ ok: true, demo: true });
   }
 
@@ -27,16 +43,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    const sessionCookie = await getAdminAuth().createSessionCookie(idToken, {
-      expiresIn: EXPIRES_IN_MS,
+    // Vérification du Firebase ID token via JWKS (ESM jose, pas jwks-rsa)
+    const { payload } = await jwtVerify(idToken, FIREBASE_JWKS, {
+      issuer: `https://securetoken.google.com/${projectId}`,
+      audience: projectId,
     });
+
+    // Émission d'un JWT de session signé avec notre propre clé
+    const sessionJwt = await new SignJWT({
+      email: payload.email,
+      name: payload.name,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(payload.sub!)
+      .setIssuedAt()
+      .setExpirationTime("5d")
+      .sign(getSessionKey());
+
     const store = await cookies();
-    store.set(SESSION_COOKIE, sessionCookie, {
+    store.set(SESSION_COOKIE, sessionJwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: EXPIRES_IN_MS / 1000,
+      maxAge: EXPIRES_IN_SECS,
     });
     return NextResponse.json({ ok: true });
   } catch {

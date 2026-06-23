@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
+import { jwtVerify } from "jose";
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
-import { getAdminAuth, isAdminConfigured } from "@/lib/firebase/admin";
+import { isAdminConfigured } from "@/lib/firebase/admin";
 
 export interface SessionUser {
   uid: string;
@@ -20,25 +21,27 @@ const DEMO_USER: SessionUser = {
 };
 
 /**
- * Récupère l'utilisateur courant depuis le cookie de session (vérifié par
- * l'Admin SDK). Renvoie `null` si non authentifié.
+ * Récupère l'utilisateur courant depuis le cookie de session (JWT signé avec
+ * SESSION_SECRET). Renvoie `null` si non authentifié.
  *
- * En mode démo (Firebase non configuré), renvoie un utilisateur de démonstration
- * pour que le tableau de bord reste accessible.
+ * En mode démo (Firebase ou SESSION_SECRET non configuré), renvoie un
+ * utilisateur de démonstration pour que le tableau de bord reste accessible.
  */
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  if (!isAdminConfigured()) return DEMO_USER;
+  const secret = process.env.SESSION_SECRET;
+  if (!isAdminConfigured() || !secret) return DEMO_USER;
 
   const session = (await cookies()).get("session")?.value;
   if (!session) return null;
 
   try {
-    const decoded = await getAdminAuth().verifySessionCookie(session, true);
+    const key = Buffer.from(secret, "base64");
+    const { payload } = await jwtVerify(session, key);
     return {
-      uid: decoded.uid,
-      email: decoded.email ?? null,
-      name: (decoded.name as string | undefined) ?? null,
-      accountId: decoded.uid,
+      uid: payload.sub!,
+      email: (payload.email as string) ?? null,
+      name: (payload.name as string) ?? null,
+      accountId: payload.sub!,
       demo: false,
     };
   } catch {
