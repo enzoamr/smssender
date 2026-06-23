@@ -1,0 +1,31 @@
+import { redirect } from "next/navigation";
+import { AuthForm } from "@/components/auth/auth-form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth/session";
+
+export const metadata = { title: "Inscription" };
+
+export default async function SignupPage() {
+  const user = await getCurrentUser();
+  if (user && !user.demo) redirect("/dashboard");
+
+  return (
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">Créer un compte</CardTitle>
+        <CardDescription>
+          Lancez vos premiers SMS en quelques minutes
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <AuthForm mode="signup" />
+      </CardContent>
+    </Card>
+  );
+}

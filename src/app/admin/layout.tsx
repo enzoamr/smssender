@@ -1,12 +1,17 @@
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getCurrentUser } from "@/lib/auth/session";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
   return (
     <SidebarProvider>
       <AppSidebar area="admin" />

@@ -1,15 +1,20 @@
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getCurrentUser } from "@/lib/auth/session";
 
 // Solde de démonstration (à brancher sur le compte réel).
 const DEMO_CREDITS = 8450;
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
   return (
     <SidebarProvider>
       <AppSidebar area="client" />
