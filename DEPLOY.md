@@ -49,6 +49,29 @@ Dans la Twilio Console, configurer le **Status Callback URL** des messages
 (ou du Messaging Service) sur `TWILIO_STATUS_CALLBACK_URL`. Les changements de
 statut (sent → delivered/failed) remonteront alors automatiquement au dashboard.
 
+## 4. Jobs planifiés (rappels du calendrier, envois différés)
+
+Les rappels sont des **jobs planifiés** exécutés par l'endpoint
+`/api/cron/run`, qu'un déclencheur appelle périodiquement.
+
+**a. Secret partagé** — générez-le (`openssl rand -base64 32`) et mettez la
+**même** valeur :
+- sur **Vercel** → variable `CRON_SECRET`
+- dans **Firebase** → `firebase functions:secrets:set CRON_SECRET`
+
+**b. Déclencheur via Firebase** (Scheduled Function, toutes les 5 min) :
+1. Activer le plan **Blaze** (Firebase Console → Upgrade ; free tier généreux).
+2. Déployer la fonction :
+   ```bash
+   cd functions && npm install && cd ..
+   firebase deploy --only functions
+   ```
+   Le fichier `functions/index.js` appelle `/api/cron/run` avec le secret.
+   Adaptez l'URL `APP_CRON_URL` si votre domaine change.
+
+> Alternative sans Firebase : un service comme **cron-job.org** qui appelle
+> `https://<domaine>/api/cron/run?key=<CRON_SECRET>` toutes les 5 minutes.
+
 ---
 
 ### Mode démo (aucune config)

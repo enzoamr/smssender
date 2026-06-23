@@ -1,0 +1,12 @@
+{
+  "name": "smssender-functions",
+  "description": "Cloud Functions Firebase : déclenche les jobs planifiés (rappels SMS).",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "firebase-functions": "^6.0.0"
+  }
+}
