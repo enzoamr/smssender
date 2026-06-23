@@ -1,18 +1,16 @@
+import { verifyApiKey, type ApiPrincipal } from "@/lib/api-keys/service";
 import { API_KEY_HEADER, DEMO_ACCOUNT_ID } from "@/lib/config";
 import { ApiError } from "./errors";
 
-export interface ApiPrincipal {
-  accountId: string;
-  keyId: string;
-}
+export type { ApiPrincipal };
 
 /**
  * Authentifie une requête de l'API publique via la clé API du client.
  * En-tête attendu : `X-Api-Key: sk_live_...`
  *
- * TODO(phase 2): hacher la clé (SHA-256) et la rechercher dans la collection
- *   `api_keys` (Firestore) pour résoudre le compte associé, vérifier le scope
- *   et l'état (révoquée/active), puis appliquer un rate limiting par clé.
+ * La clé est hachée (SHA-256) et recherchée dans le store (collection
+ * `api_keys`) pour résoudre le compte associé et vérifier l'état (active /
+ * révoquée). Une clé de démo configurable reste acceptée pour les tests rapides.
  */
 export async function authenticateApiKey(
   request: Request,
@@ -23,15 +21,16 @@ export async function authenticateApiKey(
     throw new ApiError(401, "unauthorized", "Clé API manquante (en-tête X-Api-Key).");
   }
 
-  // Placeholder tant que le stockage des clés n'est pas branché : on accepte une
-  // clé de démo configurable, sinon toute clé en environnement de développement.
+  // Clé de démo : pratique pour tester l'API sans en créer une.
   const demoKey = process.env.DEMO_API_KEY;
   if (demoKey && key === demoKey) {
     return { accountId: DEMO_ACCOUNT_ID, keyId: "key_demo" };
   }
-  if (process.env.NODE_ENV !== "production") {
-    return { accountId: DEMO_ACCOUNT_ID, keyId: "key_dev" };
-  }
 
-  throw new ApiError(401, "unauthorized", "Clé API invalide.");
+  // Vérification réelle (hash + lookup).
+  const principal = await verifyApiKey(key);
+  if (!principal) {
+    throw new ApiError(401, "unauthorized", "Clé API invalide ou révoquée.");
+  }
+  return principal;
 }

@@ -1,8 +1,6 @@
-import { KeyRound, Plus } from "lucide-react";
+import { ApiKeysManager } from "@/components/dashboard/api-keys-manager";
 import { CodeBlock } from "@/components/dashboard/code-block";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,12 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { listApiKeysForAccount } from "@/lib/api-keys/service";
+import { getCurrentUser } from "@/lib/auth/session";
+import { DEMO_ACCOUNT_ID } from "@/lib/config";
 
 export const metadata = { title: "Clés API" };
 
-const curlExample = `curl https://api.sendly.app/v1/messages \\
+const curlExample = `curl https://smssender-xi.vercel.app/api/v1/messages \\
   -X POST \\
-  -H "X-Api-Key: sk_live_••••••••••••a1b2" \\
+  -H "X-Api-Key: sk_live_votre_cle" \\
   -H "Content-Type: application/json" \\
   -d '{
     "data": {
@@ -25,50 +26,18 @@ const curlExample = `curl https://api.sendly.app/v1/messages \\
     }
   }'`;
 
-export default function ApiKeysPage() {
+export default async function ApiKeysPage() {
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
+  const keys = await listApiKeysForAccount(accountId);
+
   return (
     <>
       <PageHeader
         title="Clés API"
         description="Authentifiez vos appels à l'API Sendly avec une clé secrète."
-        actions={
-          <Button disabled>
-            <Plus />
-            Créer une clé
-          </Button>
-        }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Vos clés</CardTitle>
-          <CardDescription>
-            Ne partagez jamais vos clés. La clé n'est affichée en entier qu'à la
-            création.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <KeyRound className="size-4" />
-              </div>
-              <div>
-                <p className="font-mono text-sm">sk_live_••••••••••••a1b2</p>
-                <p className="text-xs text-muted-foreground">
-                  Clé principale · créée le 12 juin 2026
-                </p>
-              </div>
-            </div>
-            <Badge
-              variant="outline"
-              className="border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            >
-              Active
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <ApiKeysManager initialKeys={keys} />
 
       <Card>
         <CardHeader>
