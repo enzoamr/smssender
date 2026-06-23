@@ -130,6 +130,18 @@ export async function listContactsForAccount(
   return contacts.map(toContactView);
 }
 
+/** Total des contacts et nombre ajoutés sur les 7 derniers jours. */
+export async function getContactStats(
+  accountId: string,
+): Promise<{ total: number; recentWeek: number }> {
+  const contacts = await listContacts(accountId);
+  const weekAgo = Date.now() - 7 * 24 * 3600_000;
+  const recentWeek = contacts.filter(
+    (c) => Date.parse(c.createdAt) >= weekAgo,
+  ).length;
+  return { total: contacts.length, recentWeek };
+}
+
 /** Listes distinctes (étiquettes) utilisées par les contacts du compte. */
 export async function listContactLists(accountId: string): Promise<string[]> {
   const contacts = await listContacts(accountId);

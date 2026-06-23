@@ -20,14 +20,22 @@ import {
 } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth/session";
 import { DEMO_ACCOUNT_ID } from "@/lib/config";
+import { getContactStats } from "@/lib/contacts/service";
 import { getDashboardStats, listMessages } from "@/lib/messaging/service";
 
 export default async function DashboardPage() {
   const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
-  const [stats, recent] = await Promise.all([
+  const [stats, recent, contactStats] = await Promise.all([
     getDashboardStats(accountId),
     listMessages(accountId, 6),
+    getContactStats(accountId),
   ]);
+
+  // Tendance des envois : 7 derniers jours vs 7 jours précédents (données réelles).
+  const last7 = stats.daily.slice(7).reduce((sum, d) => sum + d.sent, 0);
+  const prev7 = stats.daily.slice(0, 7).reduce((sum, d) => sum + d.sent, 0);
+  const msgTrend =
+    prev7 === 0 ? null : Math.round(((last7 - prev7) / prev7) * 100);
 
   return (
     <>
@@ -47,27 +55,34 @@ export default async function DashboardPage() {
           title="Messages envoyés"
           value={stats.totalSent.toLocaleString("fr-FR")}
           icon={MessageSquare}
-          trend={{ value: "+12,5 %", positive: true }}
-          hint="vs. mois dernier"
+          trend={
+            msgTrend != null
+              ? { value: `${msgTrend >= 0 ? "+" : ""}${msgTrend} %`, positive: msgTrend >= 0 }
+              : undefined
+          }
+          hint="7 derniers jours"
         />
         <StatCard
           title="Taux de délivrabilité"
           value={`${stats.deliveryRate} %`}
           icon={CheckCircle2}
-          trend={{ value: "+1,8 pt", positive: true }}
-          hint="sur 30 jours"
+          hint="sur les messages finalisés"
         />
         <StatCard
           title="Crédits restants"
-          value="8 450"
+          value="—"
           icon={CreditCard}
-          hint="≈ 187 500 SMS"
+          hint="bientôt (facturation Stripe)"
         />
         <StatCard
           title="Contacts"
-          value="2 314"
+          value={contactStats.total.toLocaleString("fr-FR")}
           icon={Users}
-          trend={{ value: "+48", positive: true }}
+          trend={
+            contactStats.recentWeek > 0
+              ? { value: `+${contactStats.recentWeek}`, positive: true }
+              : undefined
+          }
           hint="cette semaine"
         />
       </div>

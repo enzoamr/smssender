@@ -7,9 +7,6 @@ import { getCurrentUser } from "@/lib/auth/session";
 // Données propres à chaque utilisateur : jamais de cache statique partagé.
 export const dynamic = "force-dynamic";
 
-// Solde de démonstration (à brancher sur le compte réel).
-const DEMO_CREDITS = 8450;
-
 export default async function DashboardLayout({
   children,
 }: {
@@ -22,7 +19,8 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <AppSidebar area="client" />
       <SidebarInset>
-        <Topbar credits={DEMO_CREDITS} />
+        {/* Le badge crédits sera réaffiché avec la vraie facturation (Stripe). */}
+        <Topbar />
         <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
