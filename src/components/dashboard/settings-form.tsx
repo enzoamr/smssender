@@ -59,13 +59,13 @@ export function SettingsForm({ settings }: { settings: AccountSettingsView }) {
               id="defaultSender"
               name="defaultSender"
               value={sender}
-              onChange={(e) => setSender(e.target.value.slice(0, 11))}
-              maxLength={11}
+              onChange={(e) => setSender(e.target.value.slice(0, 16))}
+              maxLength={16}
               placeholder="Sendly"
             />
             <p className="text-xs text-muted-foreground">
-              Nom alphanumérique (11 car. max), pré-rempli dans le formulaire
-              d&apos;envoi.
+              Sender ID alphanumérique (11 car. max) ou numéro Twilio, pré-rempli
+              dans le formulaire d&apos;envoi.
             </p>
           </div>
           <Button type="submit" disabled={pending}>

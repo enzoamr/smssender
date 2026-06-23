@@ -129,8 +129,8 @@ export function CampaignsManager({
                   id="from"
                   name="from"
                   value={from}
-                  onChange={(e) => setFrom(e.target.value.slice(0, 11))}
-                  maxLength={11}
+                  onChange={(e) => setFrom(e.target.value.slice(0, 16))}
+                  maxLength={16}
                   placeholder="Sendly"
                 />
               </div>

@@ -71,12 +71,12 @@ export function SendSmsForm({
                 id="from"
                 name="from"
                 value={from}
-                onChange={(event) => setFrom(event.target.value.slice(0, 11))}
-                maxLength={11}
+                onChange={(event) => setFrom(event.target.value.slice(0, 16))}
+                maxLength={16}
                 placeholder="Sendly"
               />
               <p className="text-xs text-muted-foreground">
-                Nom alphanumérique (11 car. max) ou numéro virtuel.
+                Nom alphanumérique (11 car. max) ou numéro Twilio (+33…).
               </p>
             </div>
 

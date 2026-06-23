@@ -1,5 +1,6 @@
 import { verifyApiKey, type ApiPrincipal } from "@/lib/api-keys/service";
 import { API_KEY_HEADER, DEMO_ACCOUNT_ID } from "@/lib/config";
+import { isAdminConfigured } from "@/lib/firebase/admin";
 import { ApiError } from "./errors";
 
 export type { ApiPrincipal };
@@ -21,9 +22,11 @@ export async function authenticateApiKey(
     throw new ApiError(401, "unauthorized", "Clé API manquante (en-tête X-Api-Key).");
   }
 
-  // Clé de démo : pratique pour tester l'API sans en créer une.
+  // Clé de démo : acceptée UNIQUEMENT en mode démo (Firebase non configuré),
+  // jamais en production — sinon cette valeur publique permettrait d'envoyer
+  // des SMS au frais du compte.
   const demoKey = process.env.DEMO_API_KEY;
-  if (demoKey && key === demoKey) {
+  if (!isAdminConfigured() && demoKey && key === demoKey) {
     return { accountId: DEMO_ACCOUNT_ID, keyId: "key_demo" };
   }
 

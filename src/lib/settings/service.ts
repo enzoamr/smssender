@@ -28,11 +28,11 @@ export async function saveSettings(
   const organizationName = input.organizationName.trim().slice(0, 60);
   const defaultSender = input.defaultSender.trim();
 
-  if (defaultSender.length > 11) {
-    return { ok: false, error: "L'expéditeur ne peut pas dépasser 11 caractères." };
+  if (defaultSender.length > 16) {
+    return { ok: false, error: "L'expéditeur ne peut pas dépasser 16 caractères." };
   }
   if (defaultSender && !/^[A-Za-z0-9 +]+$/.test(defaultSender)) {
-    return { ok: false, error: "Expéditeur invalide (lettres, chiffres et espaces)." };
+    return { ok: false, error: "Expéditeur invalide (lettres, chiffres, espaces, +)." };
   }
 
   await saveStoredSettings({

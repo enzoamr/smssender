@@ -26,7 +26,11 @@ import { TERMINAL_STATUSES, type Message } from "./types";
 const PRICE_PER_SEGMENT = 0.045; // crédits par segment (à brancher sur la grille tarifaire réelle)
 
 export const sendMessageSchema = z.object({
-  from: z.string().trim().min(1, "Expéditeur requis").max(11, "11 caractères max"),
+  from: z
+    .string()
+    .trim()
+    .min(1, "Expéditeur requis")
+    .max(16, "16 caractères max (sender ID ou numéro)"),
   to: z
     .union([z.string(), z.array(z.string())])
     .transform((value) => (Array.isArray(value) ? value : [value]))
