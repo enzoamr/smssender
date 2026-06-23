@@ -44,7 +44,7 @@ export type SendMessageInput = z.input<typeof sendMessageSchema>;
 
 export interface SendContext {
   accountId: string;
-  source: "dashboard" | "api";
+  source: "dashboard" | "api" | "campaign";
 }
 
 /**

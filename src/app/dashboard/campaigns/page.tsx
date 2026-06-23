@@ -1,21 +1,26 @@
-import { Megaphone } from "lucide-react";
+import { CampaignsManager } from "@/components/dashboard/campaigns-manager";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { Placeholder } from "@/components/dashboard/placeholder";
+import { listCampaignsForAccount } from "@/lib/campaigns/service";
+import { getCurrentUser } from "@/lib/auth/session";
+import { DEMO_ACCOUNT_ID } from "@/lib/config";
+import { listContactLists } from "@/lib/contacts/service";
 
 export const metadata = { title: "Campagnes" };
 
-export default function CampaignsPage() {
+export default async function CampaignsPage() {
+  const accountId = (await getCurrentUser())?.accountId ?? DEMO_ACCOUNT_ID;
+  const [campaigns, lists] = await Promise.all([
+    listCampaignsForAccount(accountId),
+    listContactLists(accountId),
+  ]);
+
   return (
     <>
       <PageHeader
         title="Campagnes"
-        description="Planifiez et suivez vos envois groupés en masse."
+        description="Envoyez un message à toute une liste de contacts, en un clic."
       />
-      <Placeholder
-        icon={Megaphone}
-        title="Campagnes SMS"
-        description="Créez des campagnes vers vos listes, programmez l'envoi, suivez la délivrabilité en temps réel et gérez les renvois automatiques."
-      />
+      <CampaignsManager initialCampaigns={campaigns} lists={lists} />
     </>
   );
 }

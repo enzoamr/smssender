@@ -129,6 +129,29 @@ export async function listContactsForAccount(
   return contacts.map(toContactView);
 }
 
+/** Listes distinctes (étiquettes) utilisées par les contacts du compte. */
+export async function listContactLists(accountId: string): Promise<string[]> {
+  const contacts = await listContacts(accountId);
+  const lists = new Set<string>();
+  for (const c of contacts) if (c.list) lists.add(c.list);
+  return Array.from(lists).sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Numéros des contacts ABONNÉS (opt-out STOP exclus), éventuellement filtrés
+ * sur une liste. Base des envois de campagne.
+ */
+export async function listSubscribedPhones(
+  accountId: string,
+  list?: string | null,
+): Promise<string[]> {
+  const contacts = await listContacts(accountId);
+  return contacts
+    .filter((c) => c.status === "subscribed")
+    .filter((c) => (list ? c.list === list : true))
+    .map((c) => c.phone);
+}
+
 /** Supprime un contact — uniquement s'il appartient au compte. */
 export async function removeContact(
   accountId: string,

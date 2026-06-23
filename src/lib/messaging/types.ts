@@ -51,8 +51,8 @@ export interface Message {
   /** Coût estimé en crédits. */
   price: number | null;
   errorCode: string | null;
-  /** Source de l'envoi : tableau de bord ou API publique. */
-  source: "dashboard" | "api";
+  /** Source de l'envoi : tableau de bord, API publique ou campagne. */
+  source: "dashboard" | "api" | "campaign";
   scheduleAt: string | null;
   createdAt: string;
   updatedAt: string;
