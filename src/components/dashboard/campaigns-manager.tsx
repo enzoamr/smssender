@@ -19,6 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,9 +40,6 @@ import type { CampaignView } from "@/lib/campaigns/types";
 const initialState: CampaignActionState = { status: "idle", message: "" };
 
 const ALL_TARGET = "__all__";
-
-const selectClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -74,6 +77,7 @@ export function CampaignsManager({
   const [name, setName] = useState("");
   const [from, setFrom] = useState(DEFAULT_SENDER);
   const [text, setText] = useState("");
+  const [target, setTarget] = useState(ALL_TARGET);
 
   const seg = computeSegments(text);
 
@@ -114,14 +118,23 @@ export function CampaignsManager({
               </div>
               <div className="space-y-2 sm:col-span-1">
                 <Label htmlFor="target">Cible</Label>
-                <select id="target" name="target" className={selectClass} defaultValue={ALL_TARGET}>
-                  <option value={ALL_TARGET}>Tous les abonnés</option>
-                  {lists.map((l) => (
-                    <option key={l} value={l}>
-                      Liste : {l}
-                    </option>
-                  ))}
-                </select>
+                <input type="hidden" name="target" value={target} />
+                <Select
+                  value={target}
+                  onValueChange={(value) => setTarget(value ?? ALL_TARGET)}
+                >
+                  <SelectTrigger id="target" className="w-full">
+                    {target === ALL_TARGET ? "Tous les abonnés" : `Liste : ${target}`}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_TARGET}>Tous les abonnés</SelectItem>
+                    {lists.map((l) => (
+                      <SelectItem key={l} value={l}>
+                        Liste : {l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2 sm:col-span-1">
                 <Label htmlFor="from">Expéditeur</Label>
