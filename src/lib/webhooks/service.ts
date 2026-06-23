@@ -18,6 +18,11 @@ import {
 
 const SECRET_PREFIX = "whsec_";
 const DELIVERY_TIMEOUT_MS = 5000;
+const DELIVERY_ATTEMPTS = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function newSecret(): string {
   return `${SECRET_PREFIX}${randomBytes(24).toString("hex")}`;
@@ -99,20 +104,29 @@ async function deliver(
 ): Promise<number | null> {
   if (!ep.url) return null;
   const body = JSON.stringify(payload);
-  try {
-    const res = await fetch(ep.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Sendly-Signature": sign(ep.secret, body),
-      },
-      body,
-      signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
-    });
-    return res.status;
-  } catch {
-    return null;
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Sendly-Signature": sign(ep.secret, body),
+  };
+
+  let lastStatus: number | null = null;
+  for (let attempt = 0; attempt < DELIVERY_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(ep.url, {
+        method: "POST",
+        headers,
+        body,
+        signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
+      });
+      lastStatus = res.status;
+      // 2xx/4xx = réponse définitive du client, on ne réessaie pas.
+      if (res.status < 500) return res.status;
+    } catch {
+      lastStatus = null; // timeout / injoignable
+    }
+    if (attempt < DELIVERY_ATTEMPTS - 1) await sleep(500 * (attempt + 1));
   }
+  return lastStatus;
 }
 
 /**

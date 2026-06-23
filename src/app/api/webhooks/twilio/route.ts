@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { mapTwilioStatus } from "@/lib/messaging/provider";
 import { updateMessageByProviderId } from "@/lib/messaging/store";
 import { dispatchMessageStatus } from "@/lib/webhooks/service";
@@ -51,9 +51,12 @@ export async function POST(request: Request) {
     errorCode,
   });
 
-  // Relais du changement de statut vers le webhook sortant du compte (best-effort).
+  // Relais vers le webhook sortant du compte APRÈS la réponse à Twilio
+  // (avec retries) : on ne bloque pas la réponse sur la livraison au client.
   if (updated) {
-    await dispatchMessageStatus(updated);
+    after(async () => {
+      await dispatchMessageStatus(updated);
+    });
   }
 
   // Twilio attend une réponse 2xx pour ne pas réessayer.

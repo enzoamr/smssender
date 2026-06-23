@@ -82,14 +82,22 @@ export async function revokeApiKey(
   return true;
 }
 
+// On n'écrit `lastUsedAt` qu'au plus une fois par fenêtre, pour éviter une
+// écriture Firestore à chaque appel API.
+const LAST_USED_THROTTLE_MS = 5 * 60_000;
+
 /** Vérifie une clé en clair : hash -> lookup -> état actif. */
 export async function verifyApiKey(raw: string): Promise<ApiPrincipal | null> {
   if (!raw.startsWith(KEY_PREFIX)) return null;
   const record = await findApiKeyByHash(hashKey(raw));
   if (!record || record.status !== "active") return null;
-  // Date de dernière utilisation (best-effort : n'empêche pas l'authentification).
-  await updateApiKey(record.id, {
-    lastUsedAt: new Date().toISOString(),
-  }).catch(() => {});
+
+  // Date de dernière utilisation (best-effort, throttlé).
+  const last = record.lastUsedAt ? Date.parse(record.lastUsedAt) : 0;
+  if (Date.now() - last > LAST_USED_THROTTLE_MS) {
+    await updateApiKey(record.id, {
+      lastUsedAt: new Date().toISOString(),
+    }).catch(() => {});
+  }
   return { accountId: record.accountId, keyId: record.id };
 }
