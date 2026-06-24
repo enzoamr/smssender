@@ -79,4 +79,10 @@ export interface ScheduledItem {
   status: JobStatus;
   /** Ids des jobs à annuler pour cet item. */
   jobIds: string[];
+  /**
+   * Source d'origine, pour cascader une annulation. Ex. un rappel a
+   * refType "appointment" : l'annuler depuis « Planifiés » supprime le RDV.
+   */
+  refType: string | null;
+  refId: string | null;
 }

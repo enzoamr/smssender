@@ -202,6 +202,8 @@ function buildItem(jobs: ScheduledJob[]): ScheduledItem {
     count: jobs.length,
     status: first.status,
     jobIds: jobs.map((j) => j.id),
+    refType: first.refType,
+    refId: first.refId,
   };
 
   if (first.kind === "campaign") {

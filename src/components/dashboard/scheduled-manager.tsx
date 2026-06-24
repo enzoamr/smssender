@@ -114,20 +114,27 @@ function UpcomingRow({ item }: { item: ScheduledItem }) {
   const [pending, startTransition] = useTransition();
   const Icon = CATEGORY[item.category].icon;
 
+  const isAppointment = item.category === "appointment";
+
   function cancel() {
-    const msg =
-      item.count > 1
+    const msg = isAppointment
+      ? "Supprimer ce rendez-vous et tous ses rappels ?"
+      : item.count > 1
         ? `Annuler ces ${item.count} envois programmés ?`
         : "Annuler cet envoi programmé ?";
     if (!window.confirm(msg)) return;
     startTransition(async () => {
-      const { ok, cancelled } = await cancelScheduledAction(item.jobIds);
+      const { ok } = await cancelScheduledAction({
+        jobIds: item.jobIds,
+        refType: item.refType,
+        refId: item.refId,
+      });
       if (ok) {
         toast.success(
-          cancelled > 1 ? `${cancelled} envois annulés.` : "Envoi annulé.",
+          isAppointment ? "Rendez-vous supprimé." : "Envoi annulé.",
         );
       } else {
-        toast.error("Annulation impossible (déjà parti ?).");
+        toast.error("Action impossible (déjà parti ?).");
       }
     });
   }
@@ -163,8 +170,8 @@ function UpcomingRow({ item }: { item: ScheduledItem }) {
         size="icon-sm"
         onClick={cancel}
         disabled={pending}
-        aria-label="Annuler"
-        title="Annuler"
+        aria-label={isAppointment ? "Supprimer" : "Annuler"}
+        title={isAppointment ? "Supprimer le rendez-vous" : "Annuler"}
       >
         {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
       </Button>
