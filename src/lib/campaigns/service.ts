@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { listSubscribedPhones } from "@/lib/contacts/service";
 import { computeSegments } from "@/lib/messaging/segments";
 import { sendMessage } from "@/lib/messaging/service";
+import { normalizePhone } from "@/lib/phone";
 import { createCampaign, listCampaigns, updateCampaign } from "./store";
 import { toCampaignView, type Campaign, type CampaignView } from "./types";
 
@@ -23,12 +24,47 @@ export interface LaunchInput {
   text: string;
   /** Liste ciblée, ou `null` pour tous les abonnés. */
   targetList: string | null;
+  /**
+   * Sélection explicite de numéros (contacts choisis un par un).
+   * Si fournie et non vide, elle est prioritaire sur `targetList`.
+   */
+  recipientPhones?: string[];
 }
 
 export interface LaunchResult {
   ok: boolean;
   error?: string;
   campaign?: CampaignView;
+}
+
+/**
+ * Résout la cible d'une campagne en numéros ABONNÉS (opt-out STOP exclus) et en
+ * libellé lisible. Trois cas : sélection explicite, liste nommée, ou tous.
+ */
+async function resolveTarget(
+  accountId: string,
+  input: LaunchInput,
+): Promise<{ phones: string[]; targetLabel: string }> {
+  const explicit = (input.recipientPhones ?? [])
+    .map((p) => normalizePhone(p))
+    .filter((p): p is string => Boolean(p));
+
+  if (explicit.length > 0) {
+    // On restreint la sélection aux contacts réellement abonnés du compte.
+    const subscribed = new Set(await listSubscribedPhones(accountId, null));
+    const phones = Array.from(new Set(explicit)).filter((p) =>
+      subscribed.has(p),
+    );
+    return { phones, targetLabel: `Sélection (${phones.length})` };
+  }
+
+  if (input.targetList) {
+    const phones = await listSubscribedPhones(accountId, input.targetList);
+    return { phones, targetLabel: `Liste : ${input.targetList}` };
+  }
+
+  const phones = await listSubscribedPhones(accountId, null);
+  return { phones, targetLabel: "Tous les abonnés" };
 }
 
 export async function launchCampaign(
@@ -43,7 +79,7 @@ export async function launchCampaign(
   if (!from) return { ok: false, error: "Expéditeur requis." };
   if (!text) return { ok: false, error: "Message vide." };
 
-  const phones = await listSubscribedPhones(accountId, input.targetList);
+  const { phones, targetLabel } = await resolveTarget(accountId, input);
   if (phones.length === 0) {
     return {
       ok: false,
@@ -66,6 +102,7 @@ export async function launchCampaign(
     from,
     text,
     targetList: input.targetList,
+    targetLabel,
     status: "sending",
     recipientCount: phones.length,
     sentCount: 0,

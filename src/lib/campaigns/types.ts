@@ -10,8 +10,10 @@ export interface Campaign {
   name: string;
   from: string;
   text: string;
-  /** Liste ciblée, ou `null` pour tous les contacts abonnés. */
+  /** Liste ciblée, ou `null` pour tous les contacts abonnés / une sélection. */
   targetList: string | null;
+  /** Libellé lisible de la cible (« Tous les abonnés », « Liste : VIP », « Sélection (3) »). */
+  targetLabel: string;
   status: CampaignStatus;
   /** Nombre de destinataires retenus (abonnés de la cible). */
   recipientCount: number;
@@ -29,6 +31,7 @@ export interface CampaignView {
   id: string;
   name: string;
   targetList: string | null;
+  targetLabel: string;
   status: CampaignStatus;
   recipientCount: number;
   sentCount: number;
@@ -43,6 +46,9 @@ export function toCampaignView(c: Campaign): CampaignView {
     id: c.id,
     name: c.name,
     targetList: c.targetList,
+    // Repli pour les anciennes campagnes enregistrées sans targetLabel.
+    targetLabel:
+      c.targetLabel ?? (c.targetList ? `Liste : ${c.targetList}` : "Tous les abonnés"),
     status: c.status,
     recipientCount: c.recipientCount,
     sentCount: c.sentCount,

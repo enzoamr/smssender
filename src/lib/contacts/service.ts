@@ -58,12 +58,16 @@ export async function addContact(
   accountId: string,
   input: { phone: string; name?: string; list?: string },
 ): Promise<AddContactResult> {
+  const name = input.name?.trim() ?? "";
+  if (!name) {
+    return { ok: false, error: "Le nom est obligatoire." };
+  }
   const phone = normalizePhone(input.phone);
   if (!phone) {
     return { ok: false, error: "Numéro invalide (format international, ex. +33612345678)." };
   }
   await createContact(
-    buildContact(accountId, phone, input.name ?? null, input.list ?? null),
+    buildContact(accountId, phone, name, input.list ?? null),
   );
   return { ok: true };
 }

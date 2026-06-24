@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_SENDER } from "@/lib/config";
 import { computeSegments } from "@/lib/messaging/segments";
+import { ScheduleField } from "./schedule-field";
 
 const PRICE_PER_SEGMENT = 0.045;
 const initialState: SendActionState = { status: "idle", message: "" };
@@ -36,6 +37,7 @@ export function SendSmsForm({
   const [from, setFrom] = useState(defaultSender);
   const [to, setTo] = useState("");
   const [text, setText] = useState("");
+  const [scheduleAt, setScheduleAt] = useState("");
 
   const seg = computeSegments(text);
   const recipients = to
@@ -115,6 +117,11 @@ export function SendSmsForm({
                 </span>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Programmation</Label>
+              <ScheduleField onChange={setScheduleAt} />
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -159,7 +166,11 @@ export function SendSmsForm({
               disabled={pending || recipients.length === 0 || text.length === 0}
             >
               {pending ? <Loader2 className="animate-spin" /> : <Send />}
-              {pending ? "Envoi en cours…" : "Envoyer"}
+              {pending
+                ? "Envoi en cours…"
+                : scheduleAt
+                  ? "Planifier l'envoi"
+                  : "Envoyer"}
             </Button>
           </CardContent>
         </Card>

@@ -138,13 +138,14 @@ export function ContactsManager({
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nom (optionnel)</Label>
+                  <Label htmlFor="name">Nom</Label>
                   <Input
                     id="name"
                     name="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Jean Dupont"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
@@ -160,7 +161,11 @@ export function ContactsManager({
               </div>
               <Button
                 type="submit"
-                disabled={addPending || phone.trim().length === 0}
+                disabled={
+                  addPending ||
+                  phone.trim().length === 0 ||
+                  name.trim().length === 0
+                }
               >
                 {addPending ? <Loader2 className="animate-spin" /> : <UserPlus />}
                 Ajouter
