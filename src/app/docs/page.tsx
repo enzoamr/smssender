@@ -453,7 +453,7 @@ function verify(rawBody, signature, secret) {
                     ["200 / 201", "Succès — requête traitée (201 à la création d'un message)."],
                     ["400", "Requête invalide : paramètre manquant ou mal formé."],
                     ["401", "Non autorisé : clé API manquante, invalide ou révoquée."],
-                    ["402", "Paiement requis : solde insuffisant (à venir)."],
+                    ["402", "Solde de crédits insuffisant : rechargez vos crédits."],
                     ["403", "Accès refusé."],
                     ["404", "Ressource introuvable."],
                     ["429", "Trop de requêtes (limite de débit dépassée)."],
@@ -488,6 +488,7 @@ function verify(rawBody, signature, secret) {
                     ["400", "invalid_request", "Paramètre manquant ou invalide."],
                     ["400", "all_recipients_unsubscribed", "Tous les destinataires sont désinscrits (STOP)."],
                     ["401", "unauthorized", "Clé API manquante, invalide ou révoquée."],
+                    ["402", "insufficient_balance", "Solde de crédits insuffisant pour cet envoi."],
                     ["429", "rate_limited", "Trop de requêtes (voir Limites)."],
                     ["500", "server_error", "Erreur interne du serveur."],
                   ].map(([h, c, d]) => (

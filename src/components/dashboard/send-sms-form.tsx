@@ -22,7 +22,6 @@ import { DEFAULT_SENDER } from "@/lib/config";
 import { computeSegments } from "@/lib/messaging/segments";
 import { ScheduleField } from "./schedule-field";
 
-const PRICE_PER_SEGMENT = 0.045;
 const initialState: SendActionState = { status: "idle", message: "" };
 
 export function SendSmsForm({
@@ -44,7 +43,7 @@ export function SendSmsForm({
     .split(/[\n,;]+/)
     .map((value) => value.trim())
     .filter(Boolean);
-  const cost = recipients.length * seg.segmentCount * PRICE_PER_SEGMENT;
+  const cost = recipients.length * seg.segmentCount; // 1 crédit = 1 segment
 
   useEffect(() => {
     if (state.status === "success") {
@@ -155,9 +154,9 @@ export function SendSmsForm({
               value={String(recipients.length * seg.segmentCount)}
             />
             <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-muted-foreground">Coût estimé</span>
+              <span className="text-muted-foreground">Coût</span>
               <span className="font-semibold tabular-nums">
-                {cost.toFixed(2)} crédits
+                {cost} crédit{cost > 1 ? "s" : ""}
               </span>
             </div>
             <Button

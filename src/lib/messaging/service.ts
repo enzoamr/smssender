@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
+import { chargeForSend } from "@/lib/billing/service";
+import { isBillingEnabled } from "@/lib/billing/stripe";
 import { listUnsubscribedPhones } from "@/lib/contacts/service";
 import { normalizePhone } from "@/lib/phone";
 import { computeSegments } from "./segments";
@@ -101,12 +103,27 @@ export async function sendMessage(
     }
   }
 
-  // TODO(billing): vérifier le solde de crédits du compte avant l'envoi
-  //   et débiter atomiquement (transaction Firestore / Stripe usage record).
-  //   En cas de solde insuffisant -> throw new ApiError(402, "insufficient_balance", ...).
-
   const provider = getProvider();
   const seg = computeSegments(text);
+
+  // Facturation : débit des crédits (1 crédit = 1 segment) AVANT l'envoi, si elle
+  // est active. Solde insuffisant -> 402, aucun message n'est créé ni envoyé.
+  if (isBillingEnabled()) {
+    const cost = recipients.length * seg.segmentCount;
+    const charged = await chargeForSend(
+      ctx.accountId,
+      cost,
+      `${recipients.length} SMS × ${seg.segmentCount} segment(s)`,
+    );
+    if (!charged) {
+      throw new ApiError(
+        402,
+        "insufficient_balance",
+        "Solde de crédits insuffisant. Rechargez vos crédits pour envoyer.",
+      );
+    }
+  }
+
   const now = new Date().toISOString();
 
   const results = await Promise.all(
