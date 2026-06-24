@@ -182,6 +182,12 @@ export default function DocsPage() {
                 ou Unicode et le nombre de segments sont calculés
                 automatiquement.
               </Field>
+              <Field name="scheduleAt" type="string (ISO 8601)">
+                Pour différer l&apos;envoi : date/heure future au format ISO 8601
+                (ex. <code className="text-xs">2026-06-25T14:30:00Z</code>). Omis
+                ou dans le passé = envoi immédiat. Un envoi planifié est listé et
+                annulable depuis Tableau de bord → Planifiés.
+              </Field>
             </div>
 
             <h3 className="pt-2 text-sm font-semibold">Exemple — cURL</h3>
@@ -248,6 +254,30 @@ print(res.json())`}</CodeBlock>
       "update_date": "2026-06-23T12:00:00.000Z"
     }
   ]
+}`}</CodeBlock>
+
+            <h3 className="pt-2 text-sm font-semibold">
+              Réponse{" "}
+              <span className="font-mono text-xs">202 Accepted</span> — envoi
+              planifié
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Quand <code className="text-xs">scheduleAt</code> est dans le
+              futur, le message n&apos;est pas envoyé tout de suite : il est mis
+              en file d&apos;attente. La réponse décrit le job planifié (et non
+              des messages). Vous le retrouvez dans Tableau de bord → Planifiés,
+              où il reste annulable jusqu&apos;à son départ.
+            </p>
+            <CodeBlock>{`{
+  "data": {
+    "id": "job_5f2c…",
+    "status": "scheduled",
+    "from": "Sendly",
+    "to": ["+33612345678"],
+    "text": "Rappel : RDV demain à 14h",
+    "schedule": "2026-06-25T14:30:00.000Z",
+    "create_date": "2026-06-24T09:00:00.000Z"
+  }
 }`}</CodeBlock>
           </Section>
 

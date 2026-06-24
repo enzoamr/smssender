@@ -3,6 +3,7 @@ import { authenticateApiKey, type ApiPrincipal } from "@/lib/api/auth";
 import { apiErrorResponse, ApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { logApiRequest } from "@/lib/logs/service";
+import { isFutureSchedule, scheduleSend } from "@/lib/messaging/schedule";
 import {
   listMessages,
   sendMessage,
@@ -80,6 +81,17 @@ export async function POST(request: Request) {
       );
     }
     const payload = body?.data ?? (body as SendMessageInput);
+
+    // Envoi planifié : si `scheduleAt` est une date future, on crée un job via
+    // le scheduler générique (202 Accepted) au lieu d'envoyer tout de suite.
+    if (isFutureSchedule((payload as { scheduleAt?: unknown })?.scheduleAt)) {
+      const scheduled = await scheduleSend(payload, {
+        accountId: principal.accountId,
+        source: "api",
+      });
+      queueLog(principal, "POST", 202, start);
+      return NextResponse.json({ data: scheduled }, { status: 202 });
+    }
 
     const messages = await sendMessage(payload, {
       accountId: principal.accountId,

@@ -49,6 +49,7 @@ export async function createAppointmentAction(
     return { status: "error", message: result.error ?? "Échec de la création." };
   }
   revalidatePath("/dashboard/calendar");
+  revalidatePath("/dashboard/scheduled");
   return {
     status: "success",
     message: `Rendez-vous créé (${result.appointment?.reminders.length ?? 0} rappel(s) programmé(s)).`,
@@ -60,6 +61,9 @@ export async function deleteAppointmentAction(
 ): Promise<{ ok: boolean }> {
   const accountId = await currentAccountId();
   const ok = await removeAppointment(accountId, id);
-  if (ok) revalidatePath("/dashboard/calendar");
+  if (ok) {
+    revalidatePath("/dashboard/calendar");
+    revalidatePath("/dashboard/scheduled");
+  }
   return { ok };
 }
