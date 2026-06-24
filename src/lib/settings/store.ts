@@ -9,14 +9,14 @@ import type { AccountSettings } from "./types";
 const COLLECTION = "account_settings";
 const memoryStore = new Map<string, AccountSettings>();
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function getStoredSettings(
   accountId: string,
 ): Promise<AccountSettings | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(accountId).get();
     return doc.exists ? (doc.data() as AccountSettings) : null;
   }
@@ -26,7 +26,7 @@ export async function getStoredSettings(
 export async function saveStoredSettings(
   settings: AccountSettings,
 ): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb()
       .collection(COLLECTION)
       .doc(settings.accountId)

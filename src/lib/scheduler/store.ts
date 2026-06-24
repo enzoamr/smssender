@@ -9,12 +9,12 @@ import type { ScheduledJob } from "./types";
 const COLLECTION = "scheduled_jobs";
 const memoryStore: ScheduledJob[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createJob(job: ScheduledJob): Promise<ScheduledJob> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(job.id).set(job);
     return job;
   }
@@ -27,7 +27,7 @@ export async function updateJob(
   patch: Partial<ScheduledJob>,
 ): Promise<void> {
   const updatedAt = new Date().toISOString();
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb()
       .collection(COLLECTION)
       .doc(id)
@@ -41,7 +41,7 @@ export async function updateJob(
 /** Jobs en attente dont l'heure est passée (les plus anciens d'abord). */
 export async function listDueJobs(limit = 100): Promise<ScheduledJob[]> {
   const nowIso = new Date().toISOString();
-  if (useFirestore()) {
+  if (isFirestore()) {
     const col = getAdminDb().collection(COLLECTION);
     try {
       const snap = await col
@@ -72,7 +72,7 @@ export async function listJobsByRef(
   refType: string,
   refId: string,
 ): Promise<ScheduledJob[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("refId", "==", refId)
@@ -86,7 +86,7 @@ export async function listJobsByRef(
 
 /** Un job par son id (ou null). */
 export async function getJob(id: string): Promise<ScheduledJob | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(id).get();
     return doc.exists ? (doc.data() as ScheduledJob) : null;
   }
@@ -98,7 +98,7 @@ export async function listJobsForAccount(
   accountId: string,
   limit = 200,
 ): Promise<ScheduledJob[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const col = getAdminDb().collection(COLLECTION);
     try {
       const snap = await col

@@ -21,12 +21,12 @@ const COLLECTION = "messages";
 const memoryStore: Message[] = seedDemoMessages();
 
 /** Vrai si l'on doit lire/écrire dans Firestore plutôt que dans le store mémoire. */
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createMessage(message: Message): Promise<Message> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(message.id).set(message);
     return message;
   }
@@ -39,7 +39,7 @@ export async function updateMessage(
   patch: Partial<Message>,
 ): Promise<void> {
   const updatedAt = new Date().toISOString();
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb()
       .collection(COLLECTION)
       .doc(id)
@@ -55,7 +55,7 @@ export async function updateMessageByProviderId(
   patch: Partial<Message>,
 ): Promise<Message | null> {
   const updatedAt = new Date().toISOString();
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("providerId", "==", providerId)
@@ -76,7 +76,7 @@ export async function listMessages(
   accountId: string,
   limit = 100,
 ): Promise<Message[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const col = getAdminDb().collection(COLLECTION);
     try {
       // Chemin optimal : tri côté Firestore (nécessite un index composite
@@ -105,7 +105,7 @@ export async function listMessages(
  * Réservé au pilotage admin — agrégation globale.
  */
 export async function listAllMessages(limit = 5000): Promise<Message[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb().collection(COLLECTION).limit(limit).get();
     return snap.docs.map((d) => d.data() as Message);
   }
@@ -158,7 +158,6 @@ function seedDemoMessages(): Message[] {
       errorMessage:
         s.status === "FAILED" ? "Échec de remise par l'opérateur." : null,
       source: "dashboard",
-      scheduleAt: null,
       createdAt: created,
       updatedAt: created,
     } satisfies Message;

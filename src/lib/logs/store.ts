@@ -10,12 +10,12 @@ const COLLECTION = "logs";
 const MEMORY_CAP = 500;
 const memoryStore: LogEntry[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createLog(entry: LogEntry): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(entry.id).set(entry);
     return;
   }
@@ -27,7 +27,7 @@ export async function listLogs(
   accountId: string,
   limit = 200,
 ): Promise<LogEntry[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const col = getAdminDb().collection(COLLECTION);
     try {
       // Chemin optimal (index composite accountId + createdAt).

@@ -9,14 +9,14 @@ import type { Appointment } from "./types";
 const COLLECTION = "appointments";
 const memoryStore: Appointment[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createAppointment(
   appointment: Appointment,
 ): Promise<Appointment> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb()
       .collection(COLLECTION)
       .doc(appointment.id)
@@ -28,7 +28,7 @@ export async function createAppointment(
 }
 
 export async function getAppointment(id: string): Promise<Appointment | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(id).get();
     return doc.exists ? (doc.data() as Appointment) : null;
   }
@@ -39,7 +39,7 @@ export async function listAppointments(
   accountId: string,
   limit = 1000,
 ): Promise<Appointment[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("accountId", "==", accountId)
@@ -56,7 +56,7 @@ export async function listAppointments(
 }
 
 export async function deleteAppointment(id: string): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(id).delete();
     return;
   }

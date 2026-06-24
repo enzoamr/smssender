@@ -12,12 +12,12 @@ import type { ApiKey } from "./types";
 const COLLECTION = "api_keys";
 const memoryStore: ApiKey[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createApiKey(key: ApiKey): Promise<ApiKey> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(key.id).set(key);
     return key;
   }
@@ -26,7 +26,7 @@ export async function createApiKey(key: ApiKey): Promise<ApiKey> {
 }
 
 export async function getApiKey(id: string): Promise<ApiKey | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(id).get();
     return doc.exists ? (doc.data() as ApiKey) : null;
   }
@@ -34,7 +34,7 @@ export async function getApiKey(id: string): Promise<ApiKey | null> {
 }
 
 export async function listApiKeys(accountId: string): Promise<ApiKey[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("accountId", "==", accountId)
@@ -50,7 +50,7 @@ export async function listApiKeys(accountId: string): Promise<ApiKey[]> {
 }
 
 export async function findApiKeyByHash(hash: string): Promise<ApiKey | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("hash", "==", hash)
@@ -65,7 +65,7 @@ export async function updateApiKey(
   id: string,
   patch: Partial<ApiKey>,
 ): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(id).set(patch, { merge: true });
     return;
   }

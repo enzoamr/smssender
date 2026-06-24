@@ -9,14 +9,14 @@ import type { WebhookEndpoint } from "./types";
 const COLLECTION = "webhook_endpoints";
 const memoryStore = new Map<string, WebhookEndpoint>();
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function getEndpoint(
   accountId: string,
 ): Promise<WebhookEndpoint | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(accountId).get();
     return doc.exists ? (doc.data() as WebhookEndpoint) : null;
   }
@@ -24,7 +24,7 @@ export async function getEndpoint(
 }
 
 export async function saveEndpoint(ep: WebhookEndpoint): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(ep.accountId).set(ep);
     return;
   }

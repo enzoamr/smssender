@@ -9,12 +9,12 @@ import type { Contact } from "./types";
 const COLLECTION = "contacts";
 const memoryStore: Contact[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createContact(contact: Contact): Promise<Contact> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(contact.id).set(contact);
     return contact;
   }
@@ -25,7 +25,7 @@ export async function createContact(contact: Contact): Promise<Contact> {
 /** Insertion en masse (import). Utilise des batches Firestore (max 500/op). */
 export async function createContacts(contacts: Contact[]): Promise<void> {
   if (contacts.length === 0) return;
-  if (useFirestore()) {
+  if (isFirestore()) {
     const db = getAdminDb();
     for (let i = 0; i < contacts.length; i += 500) {
       const batch = db.batch();
@@ -40,7 +40,7 @@ export async function createContacts(contacts: Contact[]): Promise<void> {
 }
 
 export async function getContact(id: string): Promise<Contact | null> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const doc = await getAdminDb().collection(COLLECTION).doc(id).get();
     return doc.exists ? (doc.data() as Contact) : null;
   }
@@ -49,7 +49,7 @@ export async function getContact(id: string): Promise<Contact | null> {
 
 /** Tous les contacts (tous comptes) ayant ce numéro — pour l'opt-out STOP entrant. */
 export async function findContactsByPhone(phone: string): Promise<Contact[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("phone", "==", phone)
@@ -63,7 +63,7 @@ export async function listContacts(
   accountId: string,
   limit = 1000,
 ): Promise<Contact[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("accountId", "==", accountId)
@@ -83,7 +83,7 @@ export async function updateContact(
   id: string,
   patch: Partial<Contact>,
 ): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(id).set(patch, { merge: true });
     return;
   }
@@ -92,7 +92,7 @@ export async function updateContact(
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(id).delete();
     return;
   }

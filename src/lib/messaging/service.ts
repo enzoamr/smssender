@@ -69,7 +69,7 @@ export async function sendMessage(
     throw new ApiError(400, "invalid_request", first?.message ?? "Requête invalide");
   }
 
-  const { from, to, text, scheduleAt } = parsed.data;
+  const { from, to, text } = parsed.data;
 
   // Normalisation + validation E.164 de chaque destinataire (avant d'appeler
   // le provider, pour rejeter les numéros mal formés en amont).
@@ -129,7 +129,6 @@ export async function sendMessage(
         errorCode: null,
         errorMessage: null,
         source: ctx.source,
-        scheduleAt: scheduleAt ?? null,
         createdAt: now,
         updatedAt: now,
       };

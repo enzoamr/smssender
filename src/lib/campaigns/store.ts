@@ -9,12 +9,12 @@ import type { Campaign } from "./types";
 const COLLECTION = "campaigns";
 const memoryStore: Campaign[] = [];
 
-function useFirestore(): boolean {
+function isFirestore(): boolean {
   return isAdminConfigured();
 }
 
 export async function createCampaign(campaign: Campaign): Promise<Campaign> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(campaign.id).set(campaign);
     return campaign;
   }
@@ -26,7 +26,7 @@ export async function updateCampaign(
   id: string,
   patch: Partial<Campaign>,
 ): Promise<void> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     await getAdminDb().collection(COLLECTION).doc(id).set(patch, { merge: true });
     return;
   }
@@ -38,7 +38,7 @@ export async function listCampaigns(
   accountId: string,
   limit = 100,
 ): Promise<Campaign[]> {
-  if (useFirestore()) {
+  if (isFirestore()) {
     const snap = await getAdminDb()
       .collection(COLLECTION)
       .where("accountId", "==", accountId)

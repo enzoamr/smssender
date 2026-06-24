@@ -56,7 +56,6 @@ export interface Message {
   errorMessage: string | null;
   /** Source de l'envoi : tableau de bord, API publique, campagne ou planifié. */
   source: "dashboard" | "api" | "campaign" | "scheduled";
-  scheduleAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,7 +77,6 @@ export interface ApiMessage {
   direction: Direction;
   country: string | null;
   type: MessageType;
-  schedule: string | null;
   /** Code d'erreur normalisé (null si pas d'échec). */
   error_code: string | null;
   /** Message d'erreur lisible (null si pas d'échec). */
@@ -101,7 +99,6 @@ export function toApiMessage(m: Message): ApiMessage {
     direction: m.direction,
     country: m.country,
     type: m.type,
-    schedule: m.scheduleAt,
     error_code: m.errorCode,
     error_message: m.errorMessage,
     create_date: m.createdAt,
